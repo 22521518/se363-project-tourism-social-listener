@@ -32,12 +32,12 @@ RUN pip install --no-cache-dir -r /tmp/base_requirements.txt && \
 # 🔧 Copy scripts và cấp quyền thực thi (chuẩn reproducible)
 # ================================
 USER root
-COPY projects/absa_streaming/scripts /opt/airflow/projects/absa_streaming/scripts
-RUN chmod +x /opt/airflow/projects/absa_streaming/scripts/*.sh
+COPY projects/ /opt/airflow/projects/
+RUN chmod +x /opt/airflow/projects/**/*.sh
 USER airflow
 
 # Copy thư mục streamlit của project vào image
-COPY projects/absa_streaming/streamlit /opt/airflow/projects/absa_streaming/streamlit
+COPY projects/frontend/web/streamlit /opt/airflow/projects/frontend/web/streamlit
 
 # Cài các thư viện cần thiết cho Streamlit
 USER airflow

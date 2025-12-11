@@ -21,7 +21,6 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
-    - ${AIRFLOW_PROJ_DIR:-.}/models:/opt/airflow/models
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis:
@@ -182,12 +181,12 @@ services:
   streamlit:
     build:
       context: .
-      dockerfile: web/streamlit/Dockerfile
+      dockerfile: projects/frontend/web/streamlit/Dockerfile
     container_name: streamlit
     command:
       - "streamlit"
       - "run"
-      - "/opt/airflow/projects/absa_streaming/streamlit/streamlit_app.py"
+      - "/opt/airflow/projects/frontend/web/streamlit/streamlit_app.py"
       - "--server.port"
       - "8501"
       - "--server.address"
@@ -195,8 +194,7 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}/projects/absa_streaming:/opt/airflow/projects/absa_streaming
-      - ${AIRFLOW_PROJ_DIR:-.}/models:/opt/airflow/models
+      - ${AIRFLOW_PROJ_DIR:-.}/projects/frontend/web:/opt/airflow/projects/frontend/web
     depends_on:
       airflow-webserver:
         condition: service_healthy

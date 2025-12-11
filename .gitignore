@@ -1,4 +1,6 @@
 **/agents_plan/** 
+**/__pycache__/**
 
 .env
 *.bak
+logs
