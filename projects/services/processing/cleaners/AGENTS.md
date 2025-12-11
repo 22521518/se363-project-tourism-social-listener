@@ -1,7 +1,9 @@
-# Cleaners – Agent Guidelines
+# Cleaners – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Each cleaner is a pure function: `clean_<type>(text: str) -> str`
-- Document edge cases handled
-- Include unit tests with examples
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement: `clean_<type>(text: str) -> str`
+3. Test with edge cases
+

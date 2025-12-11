@@ -1,25 +1,14 @@
-# Processing – Agent Guidelines
+# Processing – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Reusable cleaning and normalization steps for the data pipeline.
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement cleaner/normalizer as pure function
+3. Test with edge cases
 
 ## Commands
-
 ```powershell
-cd services/processing
-pip install -r requirements.txt
-python -m pipelines.main
+cd services/processing && pip install -r requirements.txt && python -m pipelines.main
 ```
 
-## Code Style
-
-- Follow PEP 8
-- Each cleaner/normalizer should be a pure function
-- Document input/output formats
-
-## Commit Scope
-
-- One cleaner or normalizer per commit
-- Include test cases with edge cases
-- Document any format changes

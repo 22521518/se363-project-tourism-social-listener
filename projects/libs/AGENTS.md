@@ -1,24 +1,15 @@
-# Libs – Agent Guidelines
+# Libs – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Shared contracts and types used by all services and frontend.
-
-## Code Style
-
-- Use TypeScript for type definitions
-- Export types via index.ts barrel files
-- Keep types minimal and focused
+## Steps
+1. Plan in `agents_plans/task/`
+2. Define TypeScript types in `types/`
+3. Export via `index.ts` barrel files
+4. Coordinate with consumers for breaking changes
 
 ## Key Types
-
-Define these shared types:
 - `Mention`: Core entity with sentiment, topics, metadata
 - `AggregatedMetrics`: Time-windowed aggregates
 - `FilterParams`: Common filter contract
 
-## Commit Scope
-
-- One type or interface change per commit
-- Include migration notes for breaking changes
-- Coordinate with consumers before modifying shared types

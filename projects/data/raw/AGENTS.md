@@ -1,10 +1,10 @@
-# Raw – Agent Guidelines
+# Raw – Step-by-Step Guide
 
-## File Naming
+> Planning artifacts go in `agents_plans/`.
 
-`<source>_<date>_<id>.json`
+## Steps
+1. Plan in `agents_plans/task/`
+2. Save as `<source>_<date>_<id>.json`
+3. Never modify raw files after creation
+4. Document corrections in metadata files
 
-## Rules
-
-- Never modify raw files after creation
-- Document any corrections in metadata files

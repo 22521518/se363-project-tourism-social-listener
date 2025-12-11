@@ -1,7 +1,12 @@
-# Services – Agent Guidelines
+# Services – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Use `<entity>.service.ts` naming
-- Keep services testable with dependency injection
-- Document service inputs/outputs
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement business logic with dependency injection
+3. Document service inputs/outputs
+
+## Style
+- Naming: `<entity>.service.ts`
+

@@ -1,7 +1,10 @@
-# Types – Agent Guidelines
+# Types – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Export via index.ts barrel file
-- Use descriptive interface names
-- Document field constraints
+## Steps
+1. Plan in `agents_plans/task/`
+2. Define types with descriptive names
+3. Export via `index.ts` barrel file
+4. Document field constraints
+

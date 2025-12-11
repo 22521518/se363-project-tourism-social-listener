@@ -1,33 +1,20 @@
-# NLP – Agent Guidelines
+# NLP – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Enrichment workers that add semantic signals to raw messages.
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement enrichment (idempotent)
+3. Test with evaluation metrics
 
 ## Commands
-
 ```powershell
-cd services/nlp
-pip install -r requirements.txt
-python main.py
+cd services/nlp && pip install -r requirements.txt && python main.py
 ```
 
-## Code Style
-
-- Follow PEP 8
-- Use type hints for all functions
-- Make enrichment pipelines idempotent (safe to re-run)
-
 ## Output Format
+- `language`: ISO code
+- `sentiment`: `{ label, score }`
+- `topics`: array
+- `entities`: extracted entities
 
-Enriched mentions must include:
-- `language`: ISO code (e.g., "vi", "en")
-- `sentiment`: `{ label: "POS"|"NEU"|"NEG", score: float }`
-- `topics`: array of topic strings
-- `entities`: extracted named entities
-
-## Commit Scope
-
-- One enrichment type per commit (sentiment, topics, etc.)
-- Include evaluation metrics for model changes
-- Document model versions in commit messages
