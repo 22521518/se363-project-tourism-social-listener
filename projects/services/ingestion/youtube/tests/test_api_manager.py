@@ -13,9 +13,12 @@ class TestYouTubeAPIManager:
     @pytest.fixture
     def api_manager(self, ingestion_config, mock_youtube_api):
         """Create API manager with mocked YouTube API."""
-        with patch("googleapiclient.discovery.build", return_value=mock_youtube_api):
-            manager = YouTubeAPIManager(ingestion_config)
-            yield manager
+        # The mock_youtube_api fixture already patches build and returns the mock
+        # We need to ensure the manager uses this same mock instance
+        manager = YouTubeAPIManager(ingestion_config)
+        # Replace the youtube client with our mock
+        manager.youtube = mock_youtube_api
+        yield manager
     
     @pytest.mark.asyncio
     async def test_fetch_channel_info_success(

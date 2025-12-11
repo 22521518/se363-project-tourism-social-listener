@@ -14,7 +14,7 @@ class TestYouTubeKafkaProducer:
     @pytest.fixture
     def producer(self, kafka_config):
         """Create producer with mocked Kafka client."""
-        with patch("kafka.KafkaProducer") as mock_class:
+        with patch("youtube.kafka_producer.KafkaProducerClient") as mock_class:
             mock_producer = MagicMock()
             mock_class.return_value = mock_producer
             
@@ -24,7 +24,7 @@ class TestYouTubeKafkaProducer:
     
     def test_connect(self, kafka_config):
         """Test connecting to Kafka."""
-        with patch("kafka.KafkaProducer") as mock_class:
+        with patch("youtube.kafka_producer.KafkaProducerClient") as mock_class:
             producer = YouTubeKafkaProducer(kafka_config)
             producer.connect()
             
@@ -92,7 +92,7 @@ class TestYouTubeKafkaProducer:
     
     def test_create_topics(self, kafka_config):
         """Test creating Kafka topics."""
-        with patch("kafka.admin.KafkaAdminClient") as mock_admin_class:
+        with patch("youtube.kafka_producer.KafkaAdminClient") as mock_admin_class:
             mock_admin = MagicMock()
             mock_admin_class.return_value = mock_admin
             
@@ -100,10 +100,11 @@ class TestYouTubeKafkaProducer:
             producer.create_topics()
             
             mock_admin.create_topics.assert_called_once()
+            mock_admin.close.assert_called_once()
     
     def test_context_manager(self, kafka_config):
         """Test context manager usage."""
-        with patch("kafka.KafkaProducer") as mock_class:
+        with patch("youtube.kafka_producer.KafkaProducerClient") as mock_class:
             mock_producer = MagicMock()
             mock_class.return_value = mock_producer
             
@@ -120,7 +121,7 @@ class TestYouTubeKafkaConsumer:
     @pytest.fixture
     def consumer(self, kafka_config):
         """Create consumer with mocked Kafka client."""
-        with patch("kafka.KafkaConsumer") as mock_class:
+        with patch("youtube.kafka_consumer.KafkaConsumerClient") as mock_class:
             mock_consumer = MagicMock()
             mock_class.return_value = mock_consumer
             
@@ -130,7 +131,7 @@ class TestYouTubeKafkaConsumer:
     
     def test_connect(self, kafka_config):
         """Test connecting and subscribing."""
-        with patch("kafka.KafkaConsumer") as mock_class:
+        with patch("youtube.kafka_consumer.KafkaConsumerClient") as mock_class:
             consumer = YouTubeKafkaConsumer(kafka_config)
             consumer.connect()
             
@@ -209,7 +210,7 @@ class TestYouTubeKafkaConsumer:
     
     def test_context_manager(self, kafka_config):
         """Test context manager usage."""
-        with patch("kafka.KafkaConsumer") as mock_class:
+        with patch("youtube.kafka_consumer.KafkaConsumerClient") as mock_class:
             mock_consumer = MagicMock()
             mock_class.return_value = mock_consumer
             

@@ -33,6 +33,9 @@ YouTube Data API v3 connector for the Social Listening Tool. Collects channel me
 | ORM Models | `models.py` | SQLAlchemy models |
 | DTOs | `dto.py` | Data transfer objects |
 
+## Code Style (Summary)
+- Python: PEP 8, type hints, snake_case, python 3.12
+
 ## Quick Start
 
 ### 1. Install Dependencies

@@ -89,11 +89,11 @@ class YouTubeAPIManager:
             cache_discovery=False
         )
         self.dao = dao
-        self._loop = asyncio.get_event_loop()
     
-    def _run_sync(self, func, *args, **kwargs):
+    async def _run_sync(self, func, *args, **kwargs):
         """Run a synchronous function in the event loop."""
-        return self._loop.run_in_executor(None, lambda: func(*args, **kwargs))
+        # return self._loop.run_in_executor(None, lambda: func(*args, **kwargs))
+        return await asyncio.to_thread(func, *args, **kwargs)
     
     # ===================
     # Channel Management Services

@@ -1,7 +1,7 @@
 # YouTube Ingestion - Data Access Objects (DAO)
 # Database access layer for YouTube entities
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List
 from contextlib import contextmanager
 
@@ -71,7 +71,7 @@ class YouTubeDAO:
                 existing.view_count = channel.view_count
                 existing.country = channel.country
                 existing.raw_payload = raw_payload
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
             else:
                 # Insert new channel
                 model = YouTubeChannelModel(
@@ -132,7 +132,7 @@ class YouTubeDAO:
                 existing.tags = list(video.tags)
                 existing.category_id = video.category_id
                 existing.raw_payload = raw_payload
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
             else:
                 model = YouTubeVideoModel(
                     id=video.id,
@@ -202,7 +202,7 @@ class YouTubeDAO:
                 existing.updated_at_youtube = comment.updated_at
                 existing.reply_count = comment.reply_count
                 existing.raw_payload = raw_payload
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
             else:
                 model = YouTubeCommentModel(
                     id=comment.id,
@@ -248,7 +248,7 @@ class YouTubeDAO:
             
             if existing:
                 existing.is_active = True
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(UTC)
             else:
                 model = TrackedChannelModel(
                     channel_id=channel_id,
