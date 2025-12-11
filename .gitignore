@@ -1,9 +1,21 @@
-**/agents_plans/** 
+# Ignore cached files
 **/__pycache__/**
+
+# Ignore agent files
+**/agents_plans/** 
 **/prompts_logs/**
 **/agents/**
 **/*.agentsignore
 
+# Ignore virtual environments
+**/*_venv/**
+
+# Ignore environment variables
 .env
 *.bak
 logs
+
+# Ignore markdown files
+*.md
+!README.md
+!AGENTS.md

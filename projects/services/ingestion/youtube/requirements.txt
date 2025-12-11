@@ -1,0 +1,29 @@
+# YouTube Ingestion Module Dependencies
+
+# YouTube API
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+
+# Kafka
+kafka-python>=2.0.2
+
+# Database ORM
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# Scheduler
+apscheduler>=3.10.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Data validation
+pydantic>=2.5.0
+
+# Logging
+structlog>=23.2.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
