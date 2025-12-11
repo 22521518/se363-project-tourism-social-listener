@@ -191,3 +191,7 @@ All agents MUST use `agents_plans/` for work tracking:
 | Create work plan           | Add to `agents_plans/task/`                   |
 | Shared types               | `libs/types/`                                 |
 | Domain entities            | `api/entities/`                               |
+
+## Ignore files
+- Use `.agentsignore` as the authoritative ignore list.  
+- Any file or directory listed inside `.agentsignore` must be fully excluded from scanning, reading, modifying, generating, or committing.

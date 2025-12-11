@@ -1,5 +1,8 @@
-**/agents_plan/** 
+**/agents_plans/** 
 **/__pycache__/**
+**/prompts_logs/**
+**/agents/**
+**/*.agentsignore
 
 .env
 *.bak
