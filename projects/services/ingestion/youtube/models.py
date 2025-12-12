@@ -1,6 +1,7 @@
 # YouTube Ingestion - ORM Models
 # SQLAlchemy models for database persistence
 
+from datetime import UTC
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
@@ -33,8 +34,8 @@ class YouTubeChannelModel(Base):
     last_checked = Column(DateTime, nullable=True)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
+    updated_at = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
     raw_payload = Column(JSONB, nullable=True)
     
     # Relationships
@@ -62,8 +63,8 @@ class YouTubeVideoModel(Base):
     category_id = Column(String(10), nullable=True)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
+    updated_at = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
     raw_payload = Column(JSONB, nullable=True)
     
     # Relationships
@@ -90,8 +91,8 @@ class YouTubeCommentModel(Base):
     reply_count = Column(Integer, default=0)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
+    updated_at = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
     raw_payload = Column(JSONB, nullable=True)
     
     # Relationships
@@ -106,13 +107,13 @@ class TrackedChannelModel(Base):
     __tablename__ = "youtube_tracked_channels"
     
     channel_id = Column(String(50), ForeignKey("youtube_channels.id"), primary_key=True)
-    last_checked = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_checked = Column(DateTime, nullable=False, default=datetime.now(UTC))
     last_video_published = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
+    updated_at = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
     
     def __repr__(self) -> str:
         return f"<TrackedChannel(channel_id={self.channel_id}, active={self.is_active})>"

@@ -1,6 +1,7 @@
 # YouTube Ingestion - Channel Tracking Manager
 # Handles channel monitoring, new video detection, and ingestion modes
 
+from datetime import UTC
 import asyncio
 import logging
 from datetime import datetime
@@ -33,7 +34,7 @@ class IngestionJob:
     channel_id: str
     job_type: str  # "full", "videos", "comments"
     status: str  # "pending", "running", "completed", "failed"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now(UTC))
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
     result: Optional[dict] = None
@@ -168,7 +169,7 @@ class ChannelTrackingManager:
             latest_published = max(v.published_at for v in new_videos)
             self.dao.update_tracking_state(
                 channel_id,
-                last_checked=datetime.utcnow(),
+                last_checked=datetime.now(UTC),
                 last_video_published=latest_published
             )
             
@@ -183,7 +184,7 @@ class ChannelTrackingManager:
             logger.debug(f"No new videos for channel {channel_id}")
             self.dao.update_tracking_state(
                 channel_id,
-                last_checked=datetime.utcnow()
+                last_checked=datetime.now(UTC)
             )
         
         return new_videos
@@ -335,13 +336,13 @@ class ChannelTrackingManager:
             
             job.status = "completed"
             job.result = result
-            job.completed_at = datetime.utcnow()
+            job.completed_at = datetime.now(UTC)
             logger.info(f"Job completed: {job.id}")
             
         except Exception as e:
             job.status = "failed"
             job.error = str(e)
-            job.completed_at = datetime.utcnow()
+            job.completed_at = datetime.now(UTC)
             logger.error(f"Job failed: {job.id}: {e}")
     
     async def get_job_status(self, job_id: str) -> Optional[IngestionJob]:
