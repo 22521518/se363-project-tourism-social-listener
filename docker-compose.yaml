@@ -59,6 +59,10 @@ services:
   airflow-webserver:
     <<: *airflow-common
     command: webserver
+    environment:
+      <<: *airflow-common-env
+      AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT: "300"
+      AIRFLOW__WEBSERVER__WEB_SERVER_WORKER_TIMEOUT: "300"
     ports:
       - "8080:8080"
     healthcheck:
@@ -193,8 +197,16 @@ services:
       - "0.0.0.0"
     ports:
       - "8501:8501"
+    environment:
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=airflow
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+      - PYTHONPATH=/opt/airflow
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}/projects/frontend/web:/opt/airflow/projects/frontend/web
+      - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
     depends_on:
       airflow-webserver:
         condition: service_healthy

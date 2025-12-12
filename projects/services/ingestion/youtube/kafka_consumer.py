@@ -12,7 +12,6 @@ from kafka import KafkaConsumer as KafkaConsumerClient
 from kafka.errors import NoBrokersAvailable
 
 from .config import KafkaConfig
-from .dto import RawIngestionMessage
 
 logger = logging.getLogger(__name__)
 
@@ -205,17 +204,29 @@ class YouTubeKafkaConsumer:
         if not self._connected:
             raise RuntimeError("Consumer not connected")
         
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         
-        while True:
-            # Run polling in executor to avoid blocking
-            event = await loop.run_in_executor(
-                None, 
-                lambda: self.consume_one(timeout_ms=1000)
-            )
-            
-            if event:
-                yield event
+        try:
+            while True:
+                # Run polling in executor to avoid blocking
+                # Avoid lambda closure, use functools.partial
+                from functools import partial
+                event = await loop.run_in_executor(
+                    None,
+                    partial(self.consume_one, timeout_ms=1000)
+                )
+                
+                if event:
+                    yield event
+                else:
+                    await asyncio.sleep(0.1)
+
+        except asyncio.CancelledError:
+            logger.info("Consumer cancelled")
+            pass
+        except Exception as e:
+            logger.error(f"Error in consume: {e}")
+            raise
     
     def commit(self) -> None:
         """Commit current offsets."""

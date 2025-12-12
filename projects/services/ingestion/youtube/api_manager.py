@@ -536,3 +536,208 @@ class YouTubeAPIManager:
             )
         else:
             raise ValueError(f"Unknown entity type: {type(entity)}")
+    
+    # ===================
+    # Database Query Methods (for Frontend)
+    # ===================
+    
+    def list_all_channels(self, limit: int = 100, offset: int = 0) -> List[ChannelDTO]:
+        """
+        List all channels from database with pagination.
+        
+        Args:
+            limit: Maximum number of channels to return
+            offset: Number of channels to skip
+            
+        Returns:
+            List of ChannelDTO objects
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot list channels")
+            return []
+        return self.dao.list_channels(limit=limit, offset=offset)
+    
+    def get_channel_videos(self, channel_id: str, limit: int = 50) -> List[VideoDTO]:
+        """
+        Get videos for a specific channel from database.
+        
+        Args:
+            channel_id: YouTube channel ID
+            limit: Maximum number of videos to return
+            
+        Returns:
+            List of VideoDTO objects ordered by published_at desc
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get videos")
+            return []
+        return self.dao.get_channel_videos(channel_id, limit=limit)
+    
+    def get_video_comments_from_db(self, video_id: str, limit: int = 100) -> List[CommentDTO]:
+        """
+        Get comments for a specific video from database.
+        
+        Args:
+            video_id: YouTube video ID
+            limit: Maximum number of comments to return
+            
+        Returns:
+            List of CommentDTO objects ordered by published_at desc
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get comments")
+            return []
+        return self.dao.get_video_comments(video_id, limit=limit)
+    
+    def get_tracking_statistics(self) -> Dict[str, Any]:
+        """
+        Get overall tracking statistics for dashboard display.
+        
+        Returns:
+            Dict with statistics:
+            - total_channels: Total number of channels in database
+            - tracked_channels: Number of actively tracked channels
+            - total_videos: Total number of videos
+            - total_comments: Total number of comments
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get statistics")
+            return {
+                "total_channels": 0,
+                "tracked_channels": 0,
+                "total_videos": 0,
+                "total_comments": 0,
+            }
+        
+        with self.dao.get_session() as session:
+            from .models import (
+                YouTubeChannelModel, 
+                YouTubeVideoModel, 
+                YouTubeCommentModel,
+                TrackedChannelModel
+            )
+            
+            total_channels = session.query(YouTubeChannelModel).count()
+            tracked_channels = session.query(TrackedChannelModel).filter_by(is_active=True).count()
+            total_videos = session.query(YouTubeVideoModel).count()
+            total_comments = session.query(YouTubeCommentModel).count()
+            
+            return {
+                "total_channels": total_channels,
+                "tracked_channels": tracked_channels,
+                "total_videos": total_videos,
+                "total_comments": total_comments,
+            }
+    
+    def get_tracked_channels_with_details(self) -> List[Dict[str, Any]]:
+        """
+        Get tracked channels with their full details for dashboard.
+        
+        Returns:
+            List of dicts with channel info and tracking status
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get tracked channels")
+            return []
+        
+        tracked = self.dao.get_tracked_channels(active_only=True)
+        result = []
+        
+        for t in tracked:
+            channel = self.dao.get_channel(t.channel_id)
+            if channel:
+                result.append({
+                    "channel_id": t.channel_id,
+                    "title": channel.title,
+                    "thumbnail_url": channel.thumbnail_url,
+                    "subscriber_count": channel.subscriber_count,
+                    "video_count": channel.video_count,
+                    "view_count": channel.view_count,
+                    "last_checked": t.last_checked.isoformat() if t.last_checked else None,
+                    "last_video_published": t.last_video_published.isoformat() if t.last_video_published else None,
+                    "is_active": t.is_active,
+                })
+        
+        return result
+    
+    def get_recent_videos(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        Get recent videos across all channels for dashboard.
+        
+        Args:
+            limit: Maximum number of videos to return
+            
+        Returns:
+            List of video dicts with channel info
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get recent videos")
+            return []
+        
+        with self.dao.get_session() as session:
+            from .models import YouTubeVideoModel, YouTubeChannelModel
+            
+            videos = (
+                session.query(YouTubeVideoModel)
+                .order_by(YouTubeVideoModel.published_at.desc())
+                .limit(limit)
+                .all()
+            )
+            
+            result = []
+            for v in videos:
+                channel = session.query(YouTubeChannelModel).filter_by(id=v.channel_id).first()
+                result.append({
+                    "id": v.id,
+                    "title": v.title,
+                    "channel_id": v.channel_id,
+                    "channel_title": channel.title if channel else "Unknown",
+                    "thumbnail_url": v.thumbnail_url,
+                    "published_at": v.published_at.isoformat() if v.published_at else None,
+                    "view_count": v.view_count,
+                    "like_count": v.like_count,
+                    "comment_count": v.comment_count,
+                })
+            
+            return result
+    
+    def get_recent_comments(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Get recent comments across all videos for dashboard.
+        
+        Args:
+            limit: Maximum number of comments to return
+            
+        Returns:
+            List of comment dicts with video info
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot get recent comments")
+            return []
+        
+        with self.dao.get_session() as session:
+            from .models import YouTubeCommentModel, YouTubeVideoModel
+            
+            comments = (
+                session.query(YouTubeCommentModel)
+                .order_by(YouTubeCommentModel.published_at.desc())
+                .limit(limit)
+                .all()
+            )
+            
+            result = []
+            for c in comments:
+                video = session.query(YouTubeVideoModel).filter_by(id=c.video_id).first()
+                result.append({
+                    "id": c.id,
+                    "video_id": c.video_id,
+                    "video_title": video.title if video else "Unknown",
+                    "author_display_name": c.author_display_name,
+                    "text": c.text[:200] + "..." if len(c.text) > 200 else c.text,
+                    "like_count": c.like_count,
+                    "published_at": c.published_at.isoformat() if c.published_at else None,
+                    "reply_count": c.reply_count,
+                })
+            
+            return result
+
