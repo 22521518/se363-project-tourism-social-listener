@@ -41,7 +41,7 @@ with DAG(
     # Creates/Updates the shared virtual environment
     setup_env = BashOperator(
         task_id='setup_env',
-        bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH}",
+        bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
 
     # Task 1: Smart Producer

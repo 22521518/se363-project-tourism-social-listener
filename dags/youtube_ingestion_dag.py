@@ -41,14 +41,14 @@ with DAG(
     # Creates/Updates the shared virtual environment
     setup_env = BashOperator(
         task_id='setup_env',
-        bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH}",
+        bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
 
     # Task 2: Spark Consumer
     # Consumes events from Kafka and saves to Database using Spark
     run_consumer = BashOperator(
         task_id='run_consumer',
-        bash_command=f"bash {CONSUMER_SCRIPT}", # --run-once",
+        bash_command=f"bash {CONSUMER_SCRIPT} ", # --run-once",
         env={**os.environ, "VENV_DIR": VENV_PATH},
     )
 
