@@ -99,6 +99,70 @@ class YouTubeAPIManager:
     # Channel Management Services
     # ===================
     
+    async def resolve_handle_to_id(self, handle: str) -> Optional[str]:
+        """
+        Resolve a YouTube handle (e.g., @KhoaiLangThang) to a Channel ID.
+        Tries efficient 'forHandle' parameter first (1 quota unit).
+        Falls back to 'search' if not supported (100 quota units).
+        
+        Args:
+            handle: The handle string (with or without @)
+            
+        Returns:
+            Channel ID if found, None otherwise
+        """
+        if not handle:
+            return None
+            
+        clean_handle = handle.strip()
+        if clean_handle.startswith("@"):
+            clean_handle = clean_handle[1:]
+        
+        logger.debug(f"Resolving handle: @{clean_handle}")
+        
+        try:
+            # 1. Try efficient 'forHandle' method
+            try:
+                request = self.youtube.channels().list(
+                    part="id",
+                    forHandle=f"@{clean_handle}"
+                )
+                response = await self._run_sync(request.execute)
+                
+                if response.get("items"):
+                    channel_id = response["items"][0]["id"]
+                    logger.debug(f"Resolved @{clean_handle} to {channel_id} (via forHandle)")
+                    return channel_id
+            except Exception as e:
+                # Catching generic Exception because google-api-client might raise
+                # various errors for unexpected kwargs or API issues.
+                logger.warning(f"'forHandle' optimization failed, falling back to search. Error: {e}")
+            
+            # 2. Fallback to search (expensive: 100 utils)
+            logger.info(f"Searching for handle: {clean_handle}")
+            request = self.youtube.search().list(
+                part="snippet",
+                q=f"@{clean_handle}",
+                type="channel",
+                maxResults=1
+            )
+            response = await self._run_sync(request.execute)
+            
+            if response.get("items"):
+                channel_id = response["items"][0]["snippet"]["channelId"]
+                logger.debug(f"Resolved @{clean_handle} to {channel_id} (via search)")
+                return channel_id
+            
+            logger.warning(f"Could not resolve handle: @{clean_handle}")
+            return None
+            
+        except HttpError as e:
+            logger.warning(f"Error resolving handle @{clean_handle}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error resolving handle @{clean_handle}: {e}")
+            return None
+
     @with_retry(max_retries=3)
     async def populate_channel(self, channel_id: str) -> ChannelDTO:
         """
@@ -110,6 +174,13 @@ class YouTubeAPIManager:
         Returns:
             ChannelDTO with channel data
         """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+            
         logger.info(f"Populating channel: {channel_id}")
         
         # Fetch channel info
@@ -132,6 +203,14 @@ class YouTubeAPIManager:
         Returns:
             True if channel was removed, False if not found
         """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if resolved_id: 
+                channel_id = resolved_id
+            # If resolution fails, we still try removing with original string just in case,
+            # though it's unlikely to match if it's a handle.
+
         if not self.dao:
             logger.warning("DAO not configured, cannot remove channel")
             return False
@@ -179,6 +258,13 @@ class YouTubeAPIManager:
         Returns:
             ChannelDTO, or tuple of (ChannelDTO, raw_payload) if return_raw=True
         """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+            
         logger.debug(f"Fetching channel info for: {channel_id}")
         
         request = self.youtube.channels().list(
@@ -233,6 +319,13 @@ class YouTubeAPIManager:
         Returns:
             List of VideoDTO objects
         """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+            
         max_results = max_results or self.config.max_videos_per_channel
         logger.info(f"Fetching up to {max_results} videos for channel: {channel_id}")
         
@@ -461,6 +554,13 @@ class YouTubeAPIManager:
         Returns:
             Dict with counts of ingested items
         """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+            
         logger.info(f"Starting full ingestion for channel: {channel_id}")
         
         # Fetch and save channel
