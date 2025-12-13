@@ -88,11 +88,13 @@ from youtube.config import IngestionConfig
 config = IngestionConfig.from_env()
 api = YouTubeAPIManager(config)
 
-# Fetch channel info
+# Fetch channel info (Supports ID or Handle)
 channel = await api.fetch_channel_info("UC_x5XG1OV2P6uZZ5FSM9Ttw")
+# OR
+channel = await api.fetch_channel_info("@KhoaiLangThang")
 
 # Populate channel to database
-channel = await api.populate_channel("UC_x5XG1OV2P6uZZ5FSM9Ttw")
+channel = await api.populate_channel("@KhoaiLangThang")
 ```
 
 ### Video Operations
