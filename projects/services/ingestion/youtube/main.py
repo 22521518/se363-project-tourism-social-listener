@@ -315,6 +315,14 @@ async def run_db_driven_ingestion(config: IngestionConfig, interval_minutes: int
                         # We assume "latest" means checking the feed again.
                         logger.info(f"Checking updates for: {channel_id} ({channel_record.title})")
                         
+                        # 0. Update Channel Info (Subscriber count, etc.)
+                        try:
+                            channel_dto = await api_manager.fetch_channel_info(channel_id)
+                            producer.produce_channel_event(channel_dto)
+                        except Exception as e:
+                            logger.warning(f"Failed to refresh info for {channel_id}: {e}")
+
+                        
                         # Get existing video IDs to filter
                         existing_ids = set(dao.get_video_ids_for_channel(channel_id))
                         

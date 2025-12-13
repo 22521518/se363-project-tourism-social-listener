@@ -31,7 +31,7 @@ with DAG(
     'youtube_ingestion_dag',
     default_args=default_args,
     description='Run YouTube Ingestion Consumer',
-    schedule_interval=timedelta(minutes=15),
+    schedule_interval=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['youtube', 'ingestion'],
@@ -48,7 +48,7 @@ with DAG(
     # Consumes events from Kafka and saves to Database using Spark
     run_consumer = BashOperator(
         task_id='run_consumer',
-        bash_command=f"bash {CONSUMER_SCRIPT}", # --run-once",
+        bash_command=f"bash {CONSUMER_SCRIPT} ", # --run-once",
         env={**os.environ, "VENV_DIR": VENV_PATH},
     )
 

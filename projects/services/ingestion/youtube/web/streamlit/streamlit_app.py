@@ -509,7 +509,11 @@ st.markdown("Real-time monitoring of YouTube channel tracking and scraped data."
 
 # Render the dashboard fragment
 render_dashboard()
- are created before any queries are run.
+@st.cache_resource
+def initialize_database():
+    """
+    Initialize the database tables.
+    Ensure that tables are created before any queries are run.
     """
     if not BACKEND_AVAILABLE:
         return  # Skip if backend imports failed
