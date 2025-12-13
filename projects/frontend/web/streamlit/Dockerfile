@@ -14,7 +14,7 @@ RUN apt-get update \
        curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/airflow/projects/frontend/web/streamlit	
+WORKDIR /opt/airflow/projects/frontend/web/streamlit
 
 # Create a virtual environment and ensure pip is available
 RUN python -m venv /opt/streamlit_venv

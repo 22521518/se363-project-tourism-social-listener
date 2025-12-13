@@ -6,13 +6,20 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
+from pathlib import Path
 
-from .config import IngestionConfig
-from .dao import YouTubeDAO
-from .api_manager import YouTubeAPIManager
-from .tracking_manager import ChannelTrackingManager, IngestionMode
-from .kafka_producer import YouTubeKafkaProducer
-from .kafka_consumer import YouTubeKafkaConsumer, create_youtube_event_processor
+# Add the project root to python path to allow imports
+# Go up 5 levels: youtube -> ingestion -> services -> projects -> airflow
+project_root = Path(__file__).resolve().parents[4]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+from projects.services.ingestion.youtube.config import IngestionConfig
+from projects.services.ingestion.youtube.dao import YouTubeDAO
+from projects.services.ingestion.youtube.api_manager import YouTubeAPIManager
+from projects.services.ingestion.youtube.tracking_manager import ChannelTrackingManager, IngestionMode
+from projects.services.ingestion.youtube.kafka_producer import YouTubeKafkaProducer
+from projects.services.ingestion.youtube.kafka_consumer import YouTubeKafkaConsumer, create_youtube_event_processor
 
 # Configure logging
 logging.basicConfig(

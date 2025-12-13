@@ -1,8 +1,5 @@
-# YouTube Monitor Dashboard
-# SE363 – Social Listening Platform
-# ======================================
-# Dashboard for monitoring YouTube channel tracking and scraped data
-
+import sys
+from pathlib import Path
 import asyncio
 import streamlit as st
 import pandas as pd
@@ -11,23 +8,41 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Import backend services
-try:
-    from projects.services.ingestion.youtube.api_manager import YouTubeAPIManager
-    from projects.services.ingestion.youtube.config import IngestionConfig
-    from projects.services.ingestion.youtube.dao import YouTubeDAO
-    BACKEND_AVAILABLE = True
-except ImportError:
-    BACKEND_AVAILABLE = False
-    
 # ------------------------
 # Page Configuration
 # ------------------------
+# Must be the first Streamlit command
 st.set_page_config(
     page_title="YouTube Monitor",
     page_icon="📺",
     layout="wide"
 )
+
+# Add the project root to python path to allow absolute imports of the framework
+# File location: projects/services/ingestion/youtube/web/streamlit/streamlit_app.py
+# Hierarchy: streamlit -> web -> youtube -> ingestion -> services -> projects -> airflow
+# Path(__file__).parents[6] should be 'airflow' root
+project_root = Path(__file__).resolve().parents[6]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+# Import backend services
+BACKEND_AVAILABLE = False
+IMPORT_ERROR_MSG = None
+
+try:
+    # Use full absolute paths so that relative imports within these modules work correctly
+    from projects.services.ingestion.youtube.api_manager import YouTubeAPIManager
+    from projects.services.ingestion.youtube.config import IngestionConfig, DatabaseConfig
+    from projects.services.ingestion.youtube.dao import YouTubeDAO
+    from projects.services.ingestion.youtube.models import Base
+    BACKEND_AVAILABLE = True
+except ImportError as e:
+    IMPORT_ERROR_MSG = str(e)
+    BACKEND_AVAILABLE = False
+
+if IMPORT_ERROR_MSG:
+    st.error(f"Import Error: {IMPORT_ERROR_MSG}")
 
 # ------------------------
 # Database Configuration
@@ -46,6 +61,28 @@ def get_engine():
         f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
         f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
     )
+
+def initialize_database():
+    """
+    Initialize database tables if they don't exist.
+
+    
+    This is called once per app session to ensure all required tables
+    (youtube_channels, youtube_videos, youtube_comments, youtube_tracked_channels)
+    are created before any queries are run.
+    """
+    if not BACKEND_AVAILABLE:
+        return  # Skip if backend imports failed
+    
+    try:
+        engine = get_engine()
+        Base.metadata.create_all(engine)
+    except Exception as e:
+        # Log but don't crash - tables may already exist or DB may be temporarily unavailable
+        st.warning(f"⚠️ Could not initialize database tables: {e}")
+
+# Run database initialization on app start
+initialize_database()
 
 # ------------------------
 # Data Loading Functions
@@ -204,6 +241,70 @@ def load_all_channels():
         st.warning(f"⚠️ Could not load channels: {e}")
         return pd.DataFrame()
 
+
+# ------------------------
+# Backend Initialization
+# ------------------------
+@st.cache_resource
+def get_api_manager():
+    """Initialize and cache the YouTube API Manager."""
+    try:
+        if not BACKEND_AVAILABLE:
+            st.error("❌ Backend services not found. Please check your python path.")
+            return None
+            
+        # Initialize configs
+        try:
+            db_config = DatabaseConfig.from_env()
+            ingestion_config = IngestionConfig.from_env()
+        except ValueError as e:
+            st.error(f"❌ Configuration error: {e}")
+            return None
+            
+        # Initialize DAO and API Manager
+        dao = YouTubeDAO(db_config)
+        manager = YouTubeAPIManager(ingestion_config, dao=dao)
+        return manager
+    except Exception as e:
+        st.error(f"❌ Failed to initialize backend: {e}")
+        return None
+
+# ------------------------
+# Action Handlers
+# ------------------------
+def handle_add_channel(manager: 'YouTubeAPIManager', channel_id: str):
+    """Handle adding a new channel."""
+    if not channel_id:
+        st.warning("⚠️ Please enter a channel ID")
+        return
+
+    with st.spinner(f"Adding channel {channel_id}..."):
+        try:
+            # Run async method in sync context
+            asyncio.run(manager.ingest_channel_full(channel_id))
+            manager.dao.register_tracked_channel(channel_id)
+            st.success(f"✅ Channel {channel_id} added and tracked successfully!")
+            # Invalidate caches to refresh data
+            load_tracking_statistics.clear()
+            load_tracked_channels.clear()
+            load_all_channels.clear()
+        except Exception as e:
+            st.error(f"❌ Failed to add channel: {e}")
+
+def handle_remove_channel(manager: 'YouTubeAPIManager', channel_id: str):
+    """Handle removing a tracked channel."""
+    try:
+        # We only stop tracking, we don't delete data to preserve history
+        # If true deletion is needed, manager.remove_channel can be improved or used differently
+        manager.dao.unregister_tracked_channel(channel_id)
+        st.success(f"✅ Channel {channel_id} untracked successfully!")
+        # Invalidate caches
+        load_tracking_statistics.clear()
+        load_tracked_channels.clear()
+        load_all_channels.clear()
+    except Exception as e:
+        st.error(f"❌ Failed to remove channel: {e}")
+
 # ------------------------
 # Auto-refresh Logic
 # ------------------------
@@ -232,7 +333,7 @@ def render_dashboard():
     # ------------------------
     # Tabs for different views
     # ------------------------
-    tab1, tab2, tab3, tab4 = st.tabs(["🎯 Tracked Channels", "🎬 Recent Videos", "💬 Recent Comments", "📋 All Channels"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Tracked Channels", "🎬 Recent Videos", "💬 Recent Comments", "📋 All Channels", "⚙️ Manage Channels"])
     
     with tab1:
         st.subheader("🎯 Tracked Channels")
@@ -240,7 +341,7 @@ def render_dashboard():
         tracked_df = load_tracked_channels()
         
         if tracked_df.empty:
-            st.info("📭 No channels are currently being tracked. Use the YouTube ingestion service to register channels.")
+            st.info("📭 No channels are currently being tracked. Use the 'Manage Channels' tab to add one.")
         else:
             # Display as cards
             for idx, row in tracked_df.iterrows():
@@ -368,6 +469,38 @@ def render_dashboard():
                     title="Subscriber Distribution (Top 10 Channels)"
                 )
                 st.plotly_chart(fig, use_container_width=True)
+
+    with tab5:
+        st.subheader("⚙️ Manage Channels")
+        
+        manager = get_api_manager()
+        if not manager:
+            st.error("Backend unavailable. Cannot manage channels.")
+        else:
+            st.markdown("#### Add New Channel")
+            with st.form("add_channel_form"):
+                new_channel_id = st.text_input("YouTube Channel ID", placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw")
+                submitted = st.form_submit_button("Add Channel")
+                if submitted:
+                    handle_add_channel(manager, new_channel_id)
+            
+            st.divider()
+            
+            st.markdown("#### Remove Tracked Channel")
+            tracked_active_df = load_tracked_channels()
+            if tracked_active_df.empty:
+                 st.info("No tracked channels to remove.")
+            else:
+                for idx, row in tracked_active_df.iterrows():
+                    col1, col2, col3 = st.columns([1, 4, 2])
+                    with col1:
+                         if row["thumbnail_url"]:
+                            st.image(row["thumbnail_url"], width=40)
+                    with col2:
+                        st.write(f"**{row['title']}** ({row['channel_id']})")
+                    with col3:
+                         if st.button("Stop Tracking", key=f"remove_{row['channel_id']}"):
+                             handle_remove_channel(manager, row['channel_id'])
     
     st.divider()
     st.caption(f"🔄 Last updated: {datetime.now().strftime('%H:%M:%S')} | SE363 Social Listening Platform")
