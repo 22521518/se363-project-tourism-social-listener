@@ -1,47 +1,28 @@
-# Frontend – Agent Guidelines
+# Frontend – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-UI components and dashboards for exploring mentions, trends, and alerts.
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement component/feature
+3. Test and include screenshots for UI changes
 
 ## Commands
-
 ```powershell
 # Streamlit dashboard
-cd web/streamlit
-pip install -r requirements.txt
-streamlit run streamlit_app.py
+cd web/streamlit && streamlit run streamlit_app.py
 
 # React (when implemented)
-cd web/react
-npm install
-npm run dev
+cd web/react && npm install && npm run dev
 ```
-
-## Code Style
-
-### Python (Streamlit)
-- Follow PEP 8
-- Use type hints
-- Keep dashboard components modular
-
-### React (planned)
-- TypeScript strict mode
-- Functional components with hooks
-- Domain-based folder structure: `src/domains/<feature>/`
 
 ## Testing
-
 ```powershell
-# Python
-pytest tests/
-
-# React
-npm test
+pytest tests/   # Python
+npm test        # React
 ```
 
-## Commit Scope
+## Style
+- Python: PEP 8, type hints, modular components
+- React: TypeScript strict, functional components
 
-- One component or feature per commit
-- Include screenshots for UI changes
-- Link to API contract when adding data-fetching features

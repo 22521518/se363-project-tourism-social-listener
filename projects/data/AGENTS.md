@@ -1,25 +1,21 @@
-# Data – Agent Guidelines
+# Data – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Dataset storage for development, testing, and experiments.
+## Steps
+1. Plan in `agents_plans/task/`
+2. Add data files to appropriate folder
+3. Document format changes in `agents_plans/`
 
-## Data Locations
-
+## Locations
 | Path | Content | Mutability |
 |------|---------|------------|
 | `raw/` | Original payloads | Immutable |
 | `processed/` | Cleaned/normalized | Append-only |
 | `models/` | Model artifacts | Versioned |
 
-## File Naming
-
+## Naming
 - Raw: `<source>_<date>_<id>.json`
 - Processed: `<pipeline>_<date>_<id>.json`
 - Models: `<model>_v<version>.pkl`
 
-## Commit Scope
-
-- Document data format changes in `agents_plans/`
-- Include sample files for new formats
-- Keep samples small (< 1MB)

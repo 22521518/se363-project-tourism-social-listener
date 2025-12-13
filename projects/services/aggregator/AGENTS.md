@@ -1,33 +1,20 @@
-# Aggregator – Agent Guidelines
+# Aggregator – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Workers that compute pre-aggregated metrics for fast dashboard queries.
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement aggregate worker
+3. Test with validation queries
 
 ## Commands
-
 ```powershell
-cd services/aggregator
-pip install -r requirements.txt
-python main.py
+cd services/aggregator && pip install -r requirements.txt && python main.py
 ```
 
-## Code Style
-
-- Follow PEP 8
-- Use deterministic aggregation logic
-- Include provenance (input time ranges) in outputs
-
 ## Output Format
-
-Aggregates must include:
 - `metricName`: identifier
 - `timeWindow`: `{ start: ISO, end: ISO }`
 - `groupBy`: dimension (e.g., sentiment, topic)
 - `value`: computed metric
 
-## Commit Scope
-
-- One aggregate type per commit
-- Include validation queries
-- Document backfill procedures for new aggregates

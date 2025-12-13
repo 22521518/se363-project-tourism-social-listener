@@ -1,9 +1,20 @@
-# Processing: NLP
+# NLP Service
 
-NLP-specific processing utilities within the processing pipeline.
+Enriches raw messages with semantic signals: sentiment, topics, entities, and classifications.
 
 ## Purpose
 
-- Language detection
-- Text tokenization
-- Pre-processing for sentiment analysis
+- Detect language
+- Analyze sentiment (positive/neutral/negative)
+- Extract topics and named entities
+- Classify tourism intent
+
+## Technology
+
+- **Language**: Python
+- **NLP**: Google Gemini (Vertex AI), spaCy, VADER
+- **Models**: DistilBERT, RoBERTa (fallback)
+
+## Status
+
+🚧 *Scaffolded — enrichment pipelines to be implemented*

@@ -1,7 +1,20 @@
-# Processing NLP – Agent Guidelines
+# NLP – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Use spaCy or NLTK for tokenization
-- Keep functions stateless and testable
-- Document model dependencies
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement enrichment (idempotent)
+3. Test with evaluation metrics
+
+## Commands
+```powershell
+cd services/nlp && pip install -r requirements.txt && python main.py
+```
+
+## Output Format
+- `language`: ISO code
+- `sentiment`: `{ label, score }`
+- `topics`: array
+- `entities`: extracted entities
+

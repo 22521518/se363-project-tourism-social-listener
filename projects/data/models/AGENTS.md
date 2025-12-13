@@ -1,10 +1,10 @@
-# Models – Agent Guidelines
+# Models – Step-by-Step Guide
 
-## File Naming
+> Planning artifacts go in `agents_plans/`.
 
-`<model>_v<version>.pkl` or `.pt`
+## Steps
+1. Plan in `agents_plans/task/`
+2. Save model as `<model>_v<version>.pkl` or `.pt`
+3. Document input/output shapes
+4. Include evaluation dataset reference
 
-## Rules
-
-- Document input/output shapes
-- Include evaluation dataset reference

@@ -22,14 +22,14 @@ port=int(os.getenv('POSTGRES_PORT','5432'))
 retries=int(os.getenv('WAIT_RETRIES','30'))
 delay=float(os.getenv('WAIT_DELAY','1'))
 for i in range(retries):
-    try:
-        s=socket.create_connection((host,port), timeout=2)
-        s.close()
-        print('database reachable')
-        sys.exit(0)
-    except Exception as e:
-        print(f'waiting for db... {i+1}/{retries}')
-        time.sleep(delay)
+   try:
+       s=socket.create_connection((host,port), timeout=2)
+       s.close()
+       print('database reachable')
+       sys.exit(0)
+   except Exception as e:
+       print(f'waiting for db... {i+1}/{retries}')
+       time.sleep(delay)
 print('database not reachable after retries, continuing')
 sys.exit(0)
 PY
