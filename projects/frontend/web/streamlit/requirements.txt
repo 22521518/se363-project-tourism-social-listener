@@ -4,5 +4,7 @@ psycopg2-binary==2.9.9
 pandas==2.2.2
 plotly==5.24.1
 sqlalchemy==1.4.52
+google-api-python-client>=2.100.0
+python-dotenv>=1.0.0
 # No project-specific requirements yet.
 # Common dependencies are installed from ../base/requirements.txt

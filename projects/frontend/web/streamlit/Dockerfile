@@ -14,12 +14,16 @@ RUN apt-get update \
        curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/airflow/projects/frontend/web/streamlit	
+WORKDIR /opt/airflow/projects/frontend/web/streamlit
 
 # Create a virtual environment and ensure pip is available
 RUN python -m venv /opt/streamlit_venv
 ENV VIRTUAL_ENV="/opt/streamlit_venv"
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Copy entrypoint script that activates the venv and optionally waits for Postgres
+COPY projects/frontend/web/streamlit/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Copy minimal requirements and install into the venv
 COPY projects/frontend/web/streamlit/requirements.txt /tmp/requirements.txt
@@ -30,10 +34,6 @@ RUN /opt/streamlit_venv/bin/python -m pip install --upgrade pip setuptools wheel
 
 # Expose Streamlit port
 EXPOSE 8501
-
-# Copy entrypoint script that activates the venv and optionally waits for Postgres
-COPY projects/frontend/web/streamlit/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Default entrypoint will ensure venv is used; CMD provides default Streamlit args
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

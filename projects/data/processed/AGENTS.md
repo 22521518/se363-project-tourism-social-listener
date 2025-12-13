@@ -1,10 +1,10 @@
-# Processed – Agent Guidelines
+# Processed – Step-by-Step Guide
 
-## File Naming
+> Planning artifacts go in `agents_plans/`.
 
-`<pipeline>_<date>_<id>.json`
+## Steps
+1. Plan in `agents_plans/task/`
+2. Save as `<pipeline>_<date>_<id>.json`
+3. Include source raw file reference
+4. Document pipeline version used
 
-## Rules
-
-- Include source raw file reference
-- Document pipeline version used

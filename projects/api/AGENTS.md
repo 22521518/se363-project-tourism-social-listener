@@ -1,40 +1,29 @@
-# API – Agent Guidelines
+# API – Step-by-Step Guide
 
-## Module Overview
+> Planning artifacts go in `agents_plans/`.
 
-Delivery layer exposing stable endpoints for mentions, aggregates, and metadata.
+## Steps
 
-## Commands
+### Step 1: Plan
+Create plan in `agents_plans/task/` before implementation.
 
+### Step 2: Implement
 ```powershell
-# Install and run (when implemented)
-cd api
-npm install
-npm run dev
+cd api && npm install && npm run dev
 ```
+- Controllers: `<entity>.controller.ts` (thin handlers)
+- Services: `<entity>.service.ts` (business logic)
+- Repositories: `<entity>.repository.ts` (data access)
 
-## Code Style
-
-- Use TypeScript with strict mode
-- Follow OpenAPI-first: define endpoints in `openapi.yaml` before implementing
-- Controllers: thin handlers, delegate to services
-- Services: business logic, testable functions
-- Repositories: data access only, no business rules
-
-## File Naming
-
-- Controllers: `<entity>.controller.ts`
-- Services: `<entity>.service.ts`
-- Repositories: `<entity>.repository.ts`
-
-## Testing
-
+### Step 3: Test
 ```powershell
 npm test
 ```
 
-## Commit Scope
+## Style
+- TypeScript strict mode
+- OpenAPI-first (define in `openapi.yaml` first)
 
-- One controller/service/repository change per commit
-- Include request/response examples for API changes
-- Document breaking changes in `agents_plans/`
+## Commits
+One controller/service/repository per commit.
+

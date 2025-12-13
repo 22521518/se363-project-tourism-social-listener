@@ -1,7 +1,9 @@
-# Normalizers – Agent Guidelines
+# Normalizers – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Each normalizer is a pure function: `normalize_<field>(value) -> canonical_value`
-- Document expected input/output formats
-- Include test cases for each normalizer
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement: `normalize_<field>(value) -> canonical_value`
+3. Test with expected input/output
+

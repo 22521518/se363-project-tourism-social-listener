@@ -1,7 +1,12 @@
-# Controllers – Agent Guidelines
+# Controllers – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Keep controllers thin: delegate to services
-- Use `<entity>.controller.ts` naming
-- Include request/response examples in tests
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement: thin handlers, delegate to services
+3. Test with request/response examples
+
+## Style
+- Naming: `<entity>.controller.ts`
+
