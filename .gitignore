@@ -9,6 +9,7 @@
 
 # Ignore virtual environments
 **/*_venv/**
+**/*.venv*/**
 
 # Ignore environment variables
 .env
