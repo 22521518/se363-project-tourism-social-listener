@@ -509,17 +509,15 @@ st.markdown("Real-time monitoring of YouTube channel tracking and scraped data."
 
 # Render the dashboard fragment
 render_dashboard()
- are created before any queries are run.
-    """
-    if not BACKEND_AVAILABLE:
-        return  # Skip if backend imports failed
+if not BACKEND_AVAILABLE:
+    pass  # Skip if backend imports failed
     
-    try:
-        engine = get_engine()
-        Base.metadata.create_all(engine)
-    except Exception as e:
-        # Log but don't crash - tables may already exist or DB may be temporarily unavailable
-        st.warning(f"⚠️ Could not initialize database tables: {e}")
+try:
+    engine = get_engine()
+    Base.metadata.create_all(engine)
+except Exception as e:
+    # Log but don't crash - tables may already exist or DB may be temporarily unavailable
+    st.warning(f"⚠️ Could not initialize database tables: {e}")
 
 # Run database initialization on app start
 initialize_database()
