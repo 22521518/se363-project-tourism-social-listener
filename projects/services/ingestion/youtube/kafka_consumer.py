@@ -354,69 +354,11 @@ async def create_youtube_event_processor(
         await consumer.process_with_handler(router)
     finally:
         consumer.disconnect()
-
-
-async def run_consumer(config: KafkaConfig, run_once: bool = False, timeout_s: int = 60) -> None:
-    """
-    Run the YouTube event consumer.
-    
-    Args:
-        config: IngestionConfig (but here we receive IngestionConfig object, so we extract kafka)
-                Wait, main.py passes IngestionConfig, but type hint might be wrong if we expect KafkaConfig.
-                main.py: asyncio.run(run_consumer(config, run_once=args.run_once))
-                So 'config' is IngestionConfig.
-        run_once: If True, stop after timeout or one batch (approx)
-        timeout_s: Timeout in seconds for run_once mode
-    """
-    # Extract Kafka config from the passed IngestionConfig object
-    # The main.py passes 'config' which is IngestionConfig.
-    # But this function signature is what we define now.
-    kafka_config = config.kafka
-    
-    # Define handlers (mock or real logic for now just logging)
-    # The actual processing logic is inside 'create_youtube_event_processor' 
-    # but we need to define what to do with them.
-    # For now, let's reuse the logic in 'handle_channel' etc. from main.py?
-    # NO, main.py defines those handlers and passes them to... wait.
-    # main.py's run_consumer was missing. The handlers in main.py were inside 'run_full_ingestion'.
-    # We need a general 'run_consumer' that saves to DB. 
-    # Let's import the handlers/logic or re-implement simple saving here?
-    # Better: This file should probably just contain the consumer class and processor.
-    # The 'run_consumer' business logic (save to DB) belongs in main.py or a service layer.
-    # HOWEVER, the user asked to FIX main.py calls.
-    # AND missing `run_consumer`. 
-    # Let's import the necessary DTO/DAO here or move the logic to main.py?
-    # Actually, main.py *called* run_consumer. 
-    # Let's define `run_consumer` here to instantiate the processor with DB saving logic.
-    # But we need DAO.
-    
-    # To avoid circular imports, maybe we should put `run_consumer` in main.py?
-    # The user asked to modify `kafka_consumer.py`.
-    # Let's put a generic `run_consumer` here that just logs, OR better:
-    # We move the `run_consumer` logic TO `kafka_consumer.py` but we need DAO.
-    
-    # Re-reading main.py:
-    # elif args.mode == "consumer":
-    #    asyncio.run(run_consumer(config, run_once=args.run_once))
-    
-    # This implies `run_consumer` should be imported from somewhere. 
-    # Previous main.py had: `from projects.services.ingestion.youtube.kafka_consumer import YouTubeKafkaConsumer, create_youtube_event_processor`
-    # It did NOT import `run_consumer`. 
-    # So I should create `run_consumer` in `kafka_consumer.py` AND handle the db saving there?
-    # That requires importing DAO/DTO.
-    
-    pass
-
-# We will implement the specific logic in main.py or here.
-# Given the structure, it's cleaner if `run_consumer` is in `main.py` if it uses DAO.
-# BUT the user said "modify kafka_consumer ... main.py ...".
-# Let's put `run_consumer` here but we need to import DAO.
     
 from .dao import YouTubeDAO
 from .dto import ChannelDTO, VideoDTO, CommentDTO
-from .api_manager import YouTubeAPIManager 
 
-async def run_consumer(config, run_once: bool = False):
+async def run_consumer(config, run_once: bool = False, timeout_s: int = 60):
     """
     Entry point for consumer mode.
     """
