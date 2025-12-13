@@ -244,6 +244,22 @@ class YouTubeDAO:
     def register_tracked_channel(self, channel_id: str) -> None:
         """Register a channel for tracking."""
         with self.get_session() as session:
+            # Ensure channel exists to satisfy foreign key
+            channel = session.query(YouTubeChannelModel).filter_by(id=channel_id).first()
+            if not channel:
+                # Create stub channel
+                channel = YouTubeChannelModel(
+                    id=channel_id,
+                    title=f"Pending Ingestion ({channel_id})",
+                    description="Channel added via monitor, pending ingestion",
+                    published_at=datetime.now(UTC),
+                    is_tracked=True,
+                )
+                session.add(channel)
+                session.flush() # Ensure ID is available
+            else:
+                channel.is_tracked = True
+
             existing = session.query(TrackedChannelModel).filter_by(channel_id=channel_id).first()
             
             if existing:
@@ -255,11 +271,6 @@ class YouTubeDAO:
                     is_active=True,
                 )
                 session.add(model)
-            
-            # Also mark the channel as tracked
-            channel = session.query(YouTubeChannelModel).filter_by(id=channel_id).first()
-            if channel:
-                channel.is_tracked = True
     
     def unregister_tracked_channel(self, channel_id: str) -> None:
         """Unregister a channel from tracking."""
