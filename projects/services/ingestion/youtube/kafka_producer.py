@@ -50,6 +50,7 @@ class YouTubeKafkaProducer:
             return
         
         try:
+            self.create_topics()
             self._producer = KafkaProducerClient(
                 bootstrap_servers=self.config.bootstrap_servers,
                 client_id=self.config.client_id,

@@ -17,10 +17,10 @@ if str(project_root) not in sys.path:
 from projects.services.ingestion.youtube.config import IngestionConfig
 from projects.services.ingestion.youtube.dao import YouTubeDAO
 from projects.services.ingestion.youtube.api_manager import YouTubeAPIManager
-from projects.services.ingestion.youtube.tracking_manager import ChannelTrackingManager, IngestionMode
+from projects.services.ingestion.youtube.tracking_manager import ChannelTrackingManager
 from projects.services.ingestion.youtube.dto import ChannelDTO, VideoDTO, CommentDTO
 from projects.services.ingestion.youtube.kafka_producer import YouTubeKafkaProducer
-from projects.services.ingestion.youtube.kafka_consumer import YouTubeKafkaConsumer, create_youtube_event_processor
+from projects.services.ingestion.youtube.kafka_consumer import create_youtube_event_processor, run_consumer
 
 # Configure logging
 logging.basicConfig(

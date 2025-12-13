@@ -5,6 +5,8 @@ import sys
 import os
 import json
 from datetime import datetime
+from kafka.admin import KafkaAdminClient, NewTopic
+from kafka.errors import TopicAlreadyExistsError
 
 # Add the root directory to path so we can import our modules
 # When running with spark-submit --py-files, the zip is added to path
@@ -142,6 +144,35 @@ def process_partition(iterator, db_config_dict):
         except Exception as e:
             print(f"Error processing row: {e}")
 
+            print(f"Error processing row: {e}")
+
+def ensure_topics_exist(kafka_cfg):
+    """Ensure Kafka topics exist before Spark tries to read them."""
+    try:
+        admin = KafkaAdminClient(
+            bootstrap_servers=kafka_cfg.bootstrap_servers,
+            client_id=f"{kafka_cfg.client_id}_admin"
+        )
+        
+        topics = [
+            NewTopic(name=kafka_cfg.channels_topic, num_partitions=1, replication_factor=1),
+            NewTopic(name=kafka_cfg.videos_topic, num_partitions=1, replication_factor=1),
+            NewTopic(name=kafka_cfg.comments_topic, num_partitions=1, replication_factor=1),
+        ]
+        
+        admin.create_topics(topics)
+        print("Created Kafka topics via Spark Consumer init")
+        
+    except TopicAlreadyExistsError:
+        print("Kafka topics already exist")
+    except Exception as e:
+        print(f"Warning: Could not ensure topics exist: {e}")
+    finally:
+        try:
+            admin.close()
+        except:
+            pass
+
 def run_spark_consumer():
     spark = SparkSession.builder \
         .appName("YouTubeIngestionConsumer") \
@@ -154,6 +185,9 @@ def run_spark_consumer():
         kafka_cfg = KafkaConfig.from_env()
         # Capture DB config eagerly on driver to pass to workers
         db_config_dict = get_db_config_dict()
+        
+        # Ensure topics exist
+        ensure_topics_exist(kafka_cfg)
     except Exception as e:
         print(f"Failed to load config: {e}")
         return
