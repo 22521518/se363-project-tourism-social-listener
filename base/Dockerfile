@@ -33,7 +33,8 @@ RUN pip install --no-cache-dir -r /tmp/base_requirements.txt && \
 # ================================
 USER root
 COPY projects/ /opt/airflow/projects/
-RUN chmod +x /opt/airflow/projects/**/*.sh
+RUN chmod +x /opt/airflow/projects/**/*.sh || true
+RUN sed -i 's/\r$//' /opt/airflow/projects/**/*.sh
 USER airflow
 
 # Copy thư mục streamlit của project vào image

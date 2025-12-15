@@ -1,0 +1,8 @@
+# YouTube Ingestion Service Dependencies
+pyspark==4.0.1
+google-api-python-client
+kafka-python-ng
+sqlalchemy
+psycopg2-binary
+python-dotenv
+apscheduler

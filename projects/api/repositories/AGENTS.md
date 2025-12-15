@@ -1,7 +1,12 @@
-# Repositories – Agent Guidelines
+# Repositories – Step-by-Step Guide
 
-## Code Style
+> Planning artifacts go in `agents_plans/`.
 
-- Use `<entity>.repository.ts` naming
-- Keep repositories focused on data access only
-- Include sample queries for testing
+## Steps
+1. Plan in `agents_plans/task/`
+2. Implement data access only (no business logic)
+3. Test with sample queries
+
+## Style
+- Naming: `<entity>.repository.ts`
+
