@@ -1,0 +1,21 @@
+# Python virtual environments
+.venv
+.venv_unified
+**/.venv
+**/.venv_unified
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node / frontend
+node_modules/
+
+# Git
+.git
+.gitignore
+
+# OS junk
+.DS_Store
+Thumbs.db
