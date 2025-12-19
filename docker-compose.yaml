@@ -265,6 +265,50 @@ services:
     depends_on:
       - zookeeper
     restart: always
+  
+  absa-worker:
+    build:
+      context: .
+      dockerfile: base/Dockerfile
+    # Chạy Consumer để xử lý AI
+    command: python /opt/airflow/projects/services/processing/tasks/targeted_absa/consumer.py
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=airflow
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+    volumes:
+      - ./projects:/opt/airflow/projects
+      # Map volume để lưu model Qwen (khoảng 3GB), tránh tải lại mỗi lần restart
+      - huggingface_cache:/root/.cache/huggingface 
+    depends_on:
+      - kafka
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 6G # Qwen cần RAM khá nhiều
+
+  absa-ui:
+    build:
+      context: .
+      dockerfile: base/Dockerfile
+    # Chạy Web UI
+    command: streamlit run /opt/airflow/projects/services/processing/tasks/targeted_absa/streamlit_app.py --server.port 8505
+    ports:
+      - "8505:8505"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+      - DB_NAME=airflow
+    volumes:
+      - ./projects:/opt/airflow/projects
+    depends_on:
+      - postgres
 
 volumes:
   postgres-db-volume:
+  huggingface_cache:
