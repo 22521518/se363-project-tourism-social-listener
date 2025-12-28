@@ -12,11 +12,13 @@
 **/*.venv*/**
 
 # Ignore environment variables
-.env
+# .env
 *.bak
 logs
+.env
 
 # Ignore markdown files
 *.md
 !README.md
 !AGENTS.md
+!USAGE.md

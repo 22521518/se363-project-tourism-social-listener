@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  streamlit:
+    build:
+      context: .
+      dockerfile: projects/frontend/web/streamlit/Dockerfile
+    container_name: streamlit
+    command:
+      - "streamlit"
+      - "run"
+      - "/opt/airflow/projects/frontend/web/streamlit/streamlit_app.py"
+      - "--server.port"
+      - "8501"
+      - "--server.address"
+      - "0.0.0.0"
+    ports:
+      - "8501:8501"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=airflow
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
+    depends_on:
+      airflow-webserver:
+        condition: service_healthy
+      airflow-scheduler:
+        condition: service_healthy
+      airflow-worker:
+        condition: service_healthy
+      airflow-triggerer:
+        condition: service_healthy
