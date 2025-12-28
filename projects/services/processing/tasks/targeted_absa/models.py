@@ -5,7 +5,8 @@ from datetime import datetime
 Base = declarative_base()
 
 class AbsaResultModel(Base):
-    __tablename__ = "targeted_absa_results"
+
+    __tablename__ = 'targeted_absa_results'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source_id = Column(String(255), nullable=False)
@@ -13,7 +14,9 @@ class AbsaResultModel(Base):
     aspect = Column(String(100), nullable=False)
     sentiment = Column(String(50), nullable=False)
     confidence = Column(Float, default=0.0)
-    correction = Column(String(50), nullable=True) # Human-in-the-loop correction
+
+    correction = Column(String(50), nullable=True)
+
     processed_at = Column(DateTime, default=datetime.utcnow)
 
 def create_tables(connection_string):
