@@ -1,4 +1,4 @@
-﻿pyspark==3.5.1
+pyspark==3.5.1
 sqlalchemy==1.4.52
 psycopg2-binary==2.9.9
 kafka-python-ng==2.2.2

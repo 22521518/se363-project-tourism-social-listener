@@ -12,7 +12,6 @@
 **/*.venv*/**
 
 # Ignore environment variables
-# .env
 *.bak
 logs
 .env
@@ -22,3 +21,5 @@ logs
 !README.md
 !AGENTS.md
 !USAGE.md
+
+# docker-compose.yaml
