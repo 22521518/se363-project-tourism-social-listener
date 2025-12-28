@@ -4,7 +4,7 @@
 
 ## Steps
 
-1. Plan in `agents_plans/task/`
+1. Plan in `agents_plans/tasks/`
 2. Implement cleaner/normalizer as pure function
 3. Test with edge cases
 
@@ -17,5 +17,5 @@ cd projects/services/processing && pip install -r requirements.txt && python -m 
 ## Location Extraction Task
 
 - Canonical LLM prompt (JSON-only) + Streamlit validation UI schema live here:
-  - [task/location_extraction/README.md](task/location_extraction/README.md)
-  - [task/location_extraction/AGENTS.md](task/location_extraction/AGENTS.md)
+  - [tasks/location_extraction/README.md](tasks/location_extraction/README.md)
+  - [tasks/location_extraction/AGENTS.md](tasks/location_extraction/AGENTS.md)

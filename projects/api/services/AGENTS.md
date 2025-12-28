@@ -3,7 +3,7 @@
 > Planning artifacts go in `agents_plans/`.
 
 ## Steps
-1. Plan in `agents_plans/task/`
+1. Plan in `agents_plans/tasks/`
 2. Implement business logic with dependency injection
 3. Document service inputs/outputs
 

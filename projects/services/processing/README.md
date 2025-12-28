@@ -21,7 +21,7 @@ This repo treats location extraction as a task-scoped processing pipeline with:
 - Human validation supported via a DB-backed UI (agent contains no UI logic)
 - Provider-agnostic LLM integration (no hardcoded vendors)
 
-See: [task/location_extraction/README.md](task/location_extraction/README.md)
+See: [tasks/location_extraction/README.md](tasks/location_extraction/README.md)
 
 ## Purpose
 

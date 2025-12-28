@@ -5,7 +5,7 @@
 ## Steps
 
 ### Step 1: Plan
-Create plan in `agents_plans/task/` before implementation.
+Create plan in `agents_plans/tasks/` before implementation.
 
 ### Step 2: Implement
 ```powershell

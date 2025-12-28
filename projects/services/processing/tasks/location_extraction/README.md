@@ -29,7 +29,7 @@ Kafka is intentionally placed **after persistence**.
 ## 📂 Task-based Folder Structure
 
 ```
-projects/services/processing/task/location_extraction/
+projects/services/processing/tasks/location_extraction/
 ├── cleaner/            # text cleaning
 ├── normalizer/         # language, unicode
 ├── pipeline/           # orchestration logic
@@ -152,7 +152,7 @@ UI rules:
 ### 1. Install Dependencies
 
 ```bash
-cd projects/services/processing/task/location_extraction
+cd projects/services/processing/tasks/location_extraction
 pip install -r requirements.txt
 ```
 

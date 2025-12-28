@@ -24,4 +24,4 @@ Enriches raw messages with semantic signals: sentiment, topics, entities, and cl
 
 Location extraction is specified as a production-ready contract (JSON-only LLM output) with DB-first persistence and Streamlit validation UI.
 
-See: [../task/location_extraction/README.md](../task/location_extraction/README.md)
+See: [../tasks/location_extraction/README.md](../tasks/location_extraction/README.md)

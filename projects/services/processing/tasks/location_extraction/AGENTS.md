@@ -44,7 +44,7 @@ This agent is responsible for **extracting geographic locations from unified tex
 ## 📦 Folder Scope (Task-level)
 
 ```
-projects/services/processing/task/location_extraction/
+projects/services/processing/tasks/location_extraction/
 ├── cleaner/
 ├── normalizer/
 ├── pipeline/
