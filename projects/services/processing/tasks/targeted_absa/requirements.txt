@@ -1,19 +1,16 @@
-# Xử lý dữ liệu & Big Data
 pyspark==3.5.1
 sqlalchemy==1.4.52
 psycopg2-binary==2.9.9
 kafka-python-ng==2.2.2
 python-dotenv==1.0.0
-
-# AI & Machine Learning (Chạy Offline)
-transformers>=4.37.0
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
+transformers>=4.37.0
 accelerate
 sentencepiece
 langchain
 langchain-community
 langchain-huggingface
-
-# Giao diện Web
+langchain-core             
 streamlit==1.39.0
 plotly==5.24.1

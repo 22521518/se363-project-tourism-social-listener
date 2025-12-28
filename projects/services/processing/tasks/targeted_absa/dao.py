@@ -1,12 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models import Base, AbsaResultModel
+from models import Base, AbsaResultModel
 
 class AbsaDAO:
     def __init__(self, connection_string):
         self.engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=self.engine)
-        # Tự động tạo bảng nếu chưa có
         Base.metadata.create_all(self.engine)
 
     def save_batch(self, results):
@@ -24,10 +23,10 @@ class AbsaDAO:
                 models.append(model)
             session.add_all(models)
             session.commit()
-            print(f"DAO: Đã lưu {len(models)} kết quả.")
+            print(f'DAO: Saved {len(models)} records')
         except Exception as e:
             session.rollback()
-            print(f"DAO Error: {e}")
+            print(f'DAO Error: {e}')
         finally:
             session.close()
 
