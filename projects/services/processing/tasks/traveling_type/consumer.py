@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 sys.path.append(os.getcwd())
 
 try:
-    from .config import DatabaseConfig, KafkaConfig
-    from .dao import TravelingTypeDAO
-    from .dto import TravelingTypeDTO
+    from  projects.services.processing.tasks.traveling_type.config import ConsumerConfig
+    from  projects.services.processing.tasks.traveling_type.dao import TravelingTypeDAO
+    from  projects.services.processing.tasks.traveling_type.dto import TravelingTypeDTO
 except ImportError as e:
     print(f"Error importing project modules: {e}")
     print("Make sure to run with --py-files projects.zip")
@@ -34,7 +34,7 @@ except ImportError as e:
 def get_db_config_dict():
     """Helper to get config as dict to pass to workers."""
     try:
-        cfg = DatabaseConfig.from_env()
+        cfg = ConsumerConfig.database
         return {
             "user": cfg.user,
             "password": cfg.password,
@@ -83,18 +83,16 @@ def run_spark_consumer():
     
     # Load configs
     try:
-        kafka_cfg = KafkaConfig.from_env()
-        # Capture DB config eagerly on driver to pass to workers
-        db_config_dict = get_db_config_dict()
+        consumer_cfg = ConsumerConfig.from_env()
         
         # Ensure topics exist
-        ensure_topics_exist(kafka_cfg)
+        ensure_topics_exist(consumer_cfg.kafka)
     except Exception as e:
         print(f"Failed to load config: {e}")
         return
 
     # Subscribe to all topics
-    topics = f"{kafka_cfg.topic}"
+    topics = f"{consumer_cfg.kafka.topic}"
     
     print(f"Subscribing to topics: {topics}")
     
@@ -102,9 +100,10 @@ def run_spark_consumer():
     df = spark \
         .readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", kafka_cfg.bootstrap_servers) \
+        .option("kafka.bootstrap.servers", consumer_cfg.kafka.bootstrap_servers) \
         .option("subscribe", topics) \
         .option("startingOffsets", "earliest") \
+        .option("maxOffsetsPerTrigger", consumer_cfg.kafka.max_offsets_per_trigger) \
         .load()
 
     # Parse Key and Value
@@ -123,7 +122,7 @@ def run_spark_consumer():
         .outputMode("append") \
         .foreachBatch(process_batch) \
         .option("checkpointLocation", "/tmp/spark_checkpoint_traveling_type_extraction") \
-        .trigger(processingTime="1 minute")
+        .trigger(processingTime=consumer_cfg.kafka.processing_time)
 
 
     # Process Batch Logic
@@ -134,7 +133,7 @@ def run_spark_consumer():
 
         logger.info(f"Processing batch {batch_id}")
         
-        dao = TravelingTypeDAO(db_config_dict)
+        dao = TravelingTypeDAO(consumer_cfg.database)
 
         # 1️⃣ Collect batch rows (small batches only!)
         rows = batch_df.collect()
@@ -152,11 +151,9 @@ def run_spark_consumer():
             )
 
         # 3️⃣ ONE LLM CALL
-        service = TravelingTypeExtractionService()
+        service = TravelingTypeExtractionService(model_config=consumer_cfg.model)
         results = service.batch_extract_traveling_types(items)
 
-        # 4️⃣ Persist results
-        now = datetime.utcnow()
         
         traveling_type_dtos: list[TravelingTypeDTO] = []
         for dto, result in zip(items, results):

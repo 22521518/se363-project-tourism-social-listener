@@ -7,8 +7,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Scripts -> YouTube
 SERVICE_ROOT="$(dirname "$SCRIPT_DIR")"
-# Airflow root: projects -> services -> ingestion -> youtube -> airflow
-AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_ROOT")")")")"
+# Airflow root: projects -> services -> processing -> tasks -> traveling type -> airflow
+AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_ROOT")")")")")"
 
 # Use provided VENV_DIR or default
 VENV_DIR="${VENV_DIR:-$SERVICE_ROOT/.venv_spark}"
@@ -24,13 +24,13 @@ source "$VENV_DIR/bin/activate"
 
 # Create unique zip file to avoid Spark caching collisions
 TIMESTAMP=$(date +%s)
-export ZIP_FILE="projects_youtube_spark_${TIMESTAMP}.zip"
+export ZIP_FILE="projects_traveling_type_extraction_spark_${TIMESTAMP}.zip"
 
-echo "Zipping projects module (Youtube Service only) into $ZIP_FILE..."
+echo "Zipping projects module (Traveling Type Extraction Service only) into $ZIP_FILE..."
 cd "$AIRFLOW_ROOT"
 
 # Cleanup old zip files to save space
-rm -f projects.zip projects_youtube_spark_*.zip
+rm -f projects.zip projects_traveling_type_extraction_spark_*.zip
 
 # Python script to zip selectively
 python3 - <<'EOF'
@@ -71,8 +71,8 @@ def zip_service(zip_name, target_dir, root_dir):
                 arcname = os.path.relpath(file_path, root_dir)
                 zipf.write(file_path, arcname)
 
-# Target: projects/services/ingestion/youtube
-target_service = os.path.join(os.getcwd(), 'projects', 'services', 'ingestion', 'youtube')
+# Target: projects/services/processing/tasks/traveling_type
+target_service = os.path.join(os.getcwd(), 'projects', 'services', 'processing','tasks', 'traveling_type')
 zip_filename = os.environ.get('ZIP_FILE', 'projects.zip')
 zip_path = os.path.join(os.getcwd(), zip_filename)
 zip_service(zip_path, target_service, os.getcwd())

@@ -5,8 +5,8 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # Scripts -> Intention
 $ServiceRoot = Split-Path -Parent $ScriptDir
-# Airflow root: projects -> services -> ingestion -> youtube -> airflow
-$AirflowRoot = (Resolve-Path "$ServiceRoot\..\..\..\..").Path
+# Airflow root: projects -> services -> processing -> tasks -> intention -> airflow
+$AirflowRoot = (Resolve-Path "$ServiceRoot\..\..\..\..\..").Path
 
 $VenvDir = "$ServiceRoot\.venv"
 $ReqFile = "$ServiceRoot\requirements.txt"

@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  traveling-type-monitor:
+      build:
+        context: .
+        dockerfile: projects/services/processing/tasks/traveling_type/streamlit/Dockerfile
+      container_name: traveling-type-monitor
+      command:
+        - "streamlit"
+        - "run"
+        - "/opt/airflow/projects/services/processing/tasks/traveling_type/streamlit/streamlit_app.py"
+        - "--server.port"
+        - "8504"
+        - "--server.address"
+        - "0.0.0.0"
+      ports:
+        - "8504:8504"
+      environment:
+        - DB_HOST=postgres
+        - DB_PORT=5432
+        - DB_NAME=airflow
+        - DB_USER=airflow
+        - DB_PASSWORD=airflow
+        - PYTHONPATH=/opt/airflow
+      volumes:
+        - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
+      # depends_on:
+      #   postgres:
+      #     condition: service_healthy

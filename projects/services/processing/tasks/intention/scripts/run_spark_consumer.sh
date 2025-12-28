@@ -7,8 +7,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Scripts -> YouTube
 SERVICE_ROOT="$(dirname "$SCRIPT_DIR")"
-# Airflow root: projects -> services -> ingestion -> youtube -> airflow
-AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_ROOT")")")")"
+# Airflow root: projects -> services -> processing -> tasks -> intention -> airflow
+AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_ROOT")")")")")"
 
 # Use provided VENV_DIR or default
 VENV_DIR="${VENV_DIR:-$SERVICE_ROOT/.venv_spark}"
@@ -71,8 +71,8 @@ def zip_service(zip_name, target_dir, root_dir):
                 arcname = os.path.relpath(file_path, root_dir)
                 zipf.write(file_path, arcname)
 
-# Target: projects/services/ingestion/youtube
-target_service = os.path.join(os.getcwd(), 'projects', 'services', 'ingestion', 'youtube')
+# Target: projects/services/processing/tasks/intention
+target_service = os.path.join(os.getcwd(), 'projects', 'services', 'processing','tasks', 'intention')
 zip_filename = os.environ.get('ZIP_FILE', 'projects.zip')
 zip_path = os.path.join(os.getcwd(), zip_filename)
 zip_service(zip_path, target_service, os.getcwd())

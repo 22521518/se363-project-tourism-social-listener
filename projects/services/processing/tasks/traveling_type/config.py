@@ -17,6 +17,8 @@ class KafkaConfig():
     client_id: str
     topic: str
     group_id: str
+    max_offsets_per_trigger: int
+    processing_time: str
   
     
     @classmethod
@@ -26,7 +28,9 @@ class KafkaConfig():
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
             topic=os.getenv("KAFKA_TOPIC", "youtube-comments"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "traveling_type_extraction"),
-            group_id=os.getenv("KAFKA_GROUP_ID", "traveling-type-extraction-group")
+            group_id=os.getenv("KAFKA_GROUP_ID", "traveling-type-extraction-group"),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "100")),
+            processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
 @dataclass(frozen=True)
@@ -60,23 +64,22 @@ class DatabaseConfig:
 @dataclass
 class ModelConfig:
     """Model configuration."""
+    openai_api_key:str
     model_name: str
-    device: int  # -1 for CPU, 0+ for GPU
-    batch_size: int
     
     @classmethod
     def from_env(cls) -> "ModelConfig":
         """Load model config from environment variables."""
         return cls(
+            openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
-            device=int(os.getenv("MODEL_DEVICE", "-1")),
-            batch_size=int(os.getenv("BATCH_SIZE", "100"))
         )
 
 
 @dataclass
 class ConsumerConfig:
     """Consumer configuration."""
+    database: DatabaseConfig
     kafka: KafkaConfig
     model: ModelConfig
     
@@ -84,12 +87,14 @@ class ConsumerConfig:
     def from_env(cls) -> "ConsumerConfig":
         """Load consumer config from environment variables."""
         return cls(
+            database= DatabaseConfig.from_env(),
             kafka=KafkaConfig.from_env(),
             model=ModelConfig.from_env()
         )
 
 if __name__ == "__main__":
     config = ConsumerConfig.from_env()
+    print(f"Database: {config.database}")
     print(f"Kafka: {config.kafka}")
     print(f"Model: {config.model}")
 

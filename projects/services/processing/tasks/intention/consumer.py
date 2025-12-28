@@ -8,8 +8,8 @@ from datetime import datetime
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
-from .langchain.langchain import IntentionExtractionService
-from .dto import ModelIntentionDTO 
+
+
 
 # Add the root directory to path so we can import our modules
 # When running with spark-submit --py-files, the zip is added to path
@@ -20,9 +20,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    from .config import DatabaseConfig, KafkaConfig
-    from .dao import IntentionDAO
-    from .dto import IntentionDTO
+    from projects.services.processing.tasks.intention.langchain.langchain import IntentionExtractionService
+    from projects.services.processing.tasks.intention.config import ConsumerConfig
+    from projects.services.processing.tasks.intention.dao import IntentionDAO
+    from projects.services.processing.tasks.intention.dto import IntentionDTO, ModelIntentionDTO
 except ImportError as e:
     print(f"Error importing project modules: {e}")
     print("Make sure to run with --py-files projects.zip")
@@ -32,20 +33,7 @@ except ImportError as e:
 # Although Spark has native checks, this ensures our Python parsing logic matches
 
 
-def get_db_config_dict():
-    """Helper to get config as dict to pass to workers."""
-    try:
-        cfg = DatabaseConfig.from_env()
-        return {
-            "user": cfg.user,
-            "password": cfg.password,
-            "host": cfg.host,
-            "port": cfg.port,
-            "database": cfg.database
-        }
-    except Exception:
-        # Fallback or fail
-        return {}
+
 
             
 def ensure_topics_exist(kafka_cfg):
@@ -84,18 +72,16 @@ def run_spark_consumer():
     
     # Load configs
     try:
-        kafka_cfg = KafkaConfig.from_env()
-        # Capture DB config eagerly on driver to pass to workers
-        db_config_dict = get_db_config_dict()
+        consumer_cfg = ConsumerConfig.from_env()
         
         # Ensure topics exist
-        ensure_topics_exist(kafka_cfg)
+        ensure_topics_exist(consumer_cfg.kafka)
     except Exception as e:
         print(f"Failed to load config: {e}")
         return
 
     # Subscribe to all topics
-    topics = f"{kafka_cfg.topic}"
+    topics = f"{consumer_cfg.kafka.topic}"
     
     print(f"Subscribing to topics: {topics}")
     
@@ -103,9 +89,10 @@ def run_spark_consumer():
     df = spark \
         .readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", kafka_cfg.bootstrap_servers) \
+        .option("kafka.bootstrap.servers", consumer_cfg.kafka.bootstrap_servers) \
         .option("subscribe", topics) \
         .option("startingOffsets", "earliest") \
+        .option("maxOffsetsPerTrigger", consumer_cfg.kafka.max_offsets_per_trigger) \
         .load()
 
     # Parse Key and Value
@@ -123,7 +110,8 @@ def run_spark_consumer():
         .writeStream \
         .outputMode("append") \
         .foreachBatch(process_batch) \
-        .option("checkpointLocation", "/tmp/spark_checkpoint_intention_extraction")
+        .option("checkpointLocation", "/tmp/spark_checkpoint_intention_extraction") \
+        .trigger(processingTime=consumer_cfg.kafka.processing_time)
 
 
     # Process Batch Logic
@@ -133,7 +121,7 @@ def run_spark_consumer():
 
         logger.info(f"Processing batch {batch_id}")
         
-        dao = IntentionDAO(db_config_dict)
+        dao = IntentionDAO(consumer_cfg.database)
 
         # 1️⃣ Collect batch rows (small batches only!)
         rows = batch_df.collect()
@@ -151,11 +139,9 @@ def run_spark_consumer():
             )
 
         # 3️⃣ ONE LLM CALL
-        service = IntentionExtractionService()
+        service = IntentionExtractionService(model_config=consumer_cfg.model)
         results = service.batch_extract_intentions(items)
 
-        # 4️⃣ Persist results
-        now = datetime.utcnow()
         
         intention_dtos: list[IntentionDTO] = []
         for dto, result in zip(items, results):
