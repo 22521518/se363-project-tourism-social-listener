@@ -309,6 +309,49 @@ services:
     depends_on:
       - postgres
 
+  absa-worker:
+    build:
+      context: .
+     
+      dockerfile: projects/services/processing/tasks/targeted_absa/Dockerfile
+    command: python /opt/airflow/projects/services/processing/tasks/targeted_absa/consumer.py
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=airflow
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+    volumes:
+      - ./projects:/opt/airflow/projects
+    
+      - huggingface_cache:/root/.cache/huggingface
+    depends_on:
+      - kafka
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+
+  absa-ui:
+    build:
+      context: .
+    
+      dockerfile: projects/services/processing/tasks/targeted_absa/Dockerfile
+    command: streamlit run /opt/airflow/projects/services/processing/tasks/targeted_absa/streamlit_app.py --server.port 8505
+    ports:
+      - "8505:8505"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+      - DB_NAME=airflow
+    volumes:
+      - ./projects:/opt/airflow/projects
+    depends_on:
+      - postgres
+
 volumes:
   postgres-db-volume:
   huggingface_cache:
