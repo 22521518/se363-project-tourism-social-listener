@@ -10,6 +10,9 @@ from kafka.errors import TopicAlreadyExistsError
 
 from .langchain.langchain import TravelingTypeExtractionService
 from .dto import ModelTravelingTypeDTO 
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Add the root directory to path so we can import our modules
 # When running with spark-submit --py-files, the zip is added to path
@@ -119,12 +122,14 @@ def run_spark_consumer():
         .writeStream \
         .outputMode("append") \
         .foreachBatch(process_batch) \
-        .option("checkpointLocation", "/tmp/spark_checkpoint_intention_extraction")
+        .option("checkpointLocation", "/tmp/spark_checkpoint_traveling_type_extraction") \
+        .trigger(processingTime="1 minute")
 
 
     # Process Batch Logic
     def process_batch(batch_df, batch_id):
         if batch_df.isEmpty():
+            logger.info(f"Batch {batch_id}: No messages to process, skipping...")
             return
 
         logger.info(f"Processing batch {batch_id}")

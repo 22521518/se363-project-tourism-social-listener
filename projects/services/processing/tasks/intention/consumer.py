@@ -15,6 +15,10 @@ from .dto import ModelIntentionDTO
 # When running with spark-submit --py-files, the zip is added to path
 sys.path.append(os.getcwd())
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 try:
     from .config import DatabaseConfig, KafkaConfig
     from .dao import IntentionDAO

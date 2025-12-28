@@ -3,14 +3,14 @@
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-# Scripts -> YouTube
+# Scripts -> Intention
 $ServiceRoot = Split-Path -Parent $ScriptDir
 # Airflow root: projects -> services -> ingestion -> youtube -> airflow
 $AirflowRoot = (Resolve-Path "$ServiceRoot\..\..\..\..").Path
 
 $VenvDir = "$ServiceRoot\.venv"
-$ReqFile = "$ServiceRoot\requirements.youtube.txt"
-$ConsumerScript = "$ServiceRoot\spark_consumer.py"
+$ReqFile = "$ServiceRoot\requirements.txt"
+$ConsumerScript = "$ServiceRoot\consumer.py"
 
 # 1. Setup Venv
 if (-not (Test-Path $VenvDir)) {

@@ -24,13 +24,13 @@ source "$VENV_DIR/bin/activate"
 
 # Create unique zip file to avoid Spark caching collisions
 TIMESTAMP=$(date +%s)
-export ZIP_FILE="projects_youtube_spark_${TIMESTAMP}.zip"
+export ZIP_FILE="projects_intention_extraction_spark_${TIMESTAMP}.zip"
 
-echo "Zipping projects module (Youtube Service only) into $ZIP_FILE..."
+echo "Zipping projects module (Intention Extraction Service only) into $ZIP_FILE..."
 cd "$AIRFLOW_ROOT"
 
 # Cleanup old zip files to save space
-rm -f projects.zip projects_youtube_spark_*.zip
+rm -f projects.zip projects_intention_extraction_spark_*.zip
 
 # Python script to zip selectively
 python3 - <<'EOF'
