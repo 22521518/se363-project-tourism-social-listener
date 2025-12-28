@@ -7,7 +7,7 @@
 ## How to Work (Step-by-Step)
 
 ### Step 1: Plan First
-1. Create a plan file in `agents_plans/task/<task-name>.md`
+1. Create a plan file in `agents_plans/tasks/<task-name>.md`
 2. Define: goal, acceptance criteria, affected modules
 3. Move to `agents_plans/in_progress/` when starting
 
@@ -26,7 +26,7 @@
 ## Artifacts Location
 
 All artifacts go in `agents_plans/`:
-- `task/` — new tasks
+- `tasks/` — new tasks
 - `in_progress/` — active work
 - `dones/` — completed work
 - `epic/` — cross-module initiatives

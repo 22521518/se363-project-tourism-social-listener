@@ -40,7 +40,7 @@ class KafkaConfig:
         """Load Kafka config from environment variables."""
         return cls(
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
-            client_id=os.getenv("KAFKA_CLIENT_ID", "youtube_ingestion"),
+            client_id=os.getenv("KAFKA_CLIENT_YOUTUBE_INGEST_ID", "youtube_ingestion"),
         )
 
 

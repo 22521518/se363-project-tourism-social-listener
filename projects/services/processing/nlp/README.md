@@ -8,13 +8,20 @@ Enriches raw messages with semantic signals: sentiment, topics, entities, and cl
 - Analyze sentiment (positive/neutral/negative)
 - Extract topics and named entities
 - Classify tourism intent
+- Extract locations (geo entities) for downstream enrichment
 
 ## Technology
 
 - **Language**: Python
-- **NLP**: Google Gemini (Vertex AI), spaCy, VADER
+- **NLP**: LLM (provider configurable), spaCy, VADER
 - **Models**: DistilBERT, RoBERTa (fallback)
 
 ## Status
 
-🚧 *Scaffolded — enrichment pipelines to be implemented*
+🚧 _Scaffolded — enrichment pipelines to be implemented_
+
+## Location Extraction
+
+Location extraction is specified as a production-ready contract (JSON-only LLM output) with DB-first persistence and Streamlit validation UI.
+
+See: [../tasks/location_extraction/README.md](../tasks/location_extraction/README.md)
