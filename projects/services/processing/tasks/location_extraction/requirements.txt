@@ -28,3 +28,11 @@ jsonschema>=4.0.0
 
 # Environment Variable Loading
 python-dotenv>=1.0.0
+
+# Database Persistence
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# Kafka & Distributed Processing
+kafka-python-ng>=2.0.0
+
