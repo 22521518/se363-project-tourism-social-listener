@@ -394,12 +394,12 @@ def render_dashboard():
                 )
                 fig.update_layout(xaxis_tickangle=-45, height=400)
                 fig.update_xaxes(ticktext=[t[:30] + "..." if len(t) > 30 else t for t in videos_df.head(10)["title"]], tickvals=videos_df.head(10)["title"])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             
             # Display as table
             display_df = videos_df[["title", "channel_title", "view_count", "like_count", "comment_count", "published_at"]].copy()
             display_df.columns = ["Title", "Channel", "Views", "Likes", "Comments", "Published"]
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, width='stretch', hide_index=True)
     
     with tab3:
         st.subheader("💬 Recent Comments")
@@ -454,7 +454,7 @@ def render_dashboard():
             # Display as table
             display_df = filtered_df[["title", "subscriber_count", "video_count", "view_count", "country", "is_tracked"]].copy()
             display_df.columns = ["Title", "Subscribers", "Videos", "Views", "Country", "Tracked"]
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, width='stretch', hide_index=True)
             
             # Visualization: Subscriber distribution
             if len(filtered_df) > 1:

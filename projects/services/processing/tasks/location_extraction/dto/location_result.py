@@ -32,6 +32,9 @@ class Location(BaseModel):
         le=1.0,
         description="Confidence score between 0 and 1"
     )
+
+    class Config:
+        extra = 'allow'
     
     @field_validator("confidence")
     @classmethod
@@ -56,6 +59,10 @@ class PrimaryLocation(BaseModel):
     )
 
 
+    class Config:
+        extra = 'allow'
+
+
 class ExtractionMeta(BaseModel):
     """Metadata about the extraction process."""
     
@@ -68,6 +75,10 @@ class ExtractionMeta(BaseModel):
         default=False,
         description="Whether a fallback extractor was used"
     )
+
+
+    class Config:
+        extra = 'allow'
 
 
 class LocationExtractionResult(BaseModel):
@@ -99,6 +110,9 @@ class LocationExtractionResult(BaseModel):
         description="Metadata about the extraction process"
     )
     
+    class Config:
+        extra = 'allow'
+
     def to_dict(self) -> dict:
         """Convert to dictionary matching the JSON schema."""
         return self.model_dump()
