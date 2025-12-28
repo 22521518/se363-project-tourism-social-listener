@@ -20,3 +20,4 @@ logs
 *.md
 !README.md
 !AGENTS.md
+!USAGE.md
