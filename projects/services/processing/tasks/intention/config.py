@@ -68,7 +68,7 @@ class ModelConfig:
     def from_env(cls) -> "ModelConfig":
         """Load model config from environment variables."""
         return cls(
-            model_name=os.getenv("MODEL_NAME", "google/flan-t5-base"),
+            model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
             device=int(os.getenv("MODEL_DEVICE", "-1")),
             batch_size=int(os.getenv("BATCH_SIZE", "100"))
         )

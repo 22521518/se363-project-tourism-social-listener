@@ -7,29 +7,29 @@ from langchain_openai import ChatOpenAI
 
 import json
 from typing import List
-from ..dto import ModelIntentionDTO
+from ..dto import ModelTravelingTypeDTO
 
 from .prompts import BATCH_PROMPT
-from .schemas import BatchIntentionResult
+from .schemas import BatchTravelingTypeResult
 
 
 logger = logging.getLogger(__name__)
 
 
-class IntentionExtractionService:
-    """Service for extracting intentions from text using LangChain."""
+class TravelingTypeExtractionService:
+    """Service for extracting traveling type from text using LangChain."""
     
     def __init__(self):
         self.llm = ChatOpenAI(
             model="gpt-4o-mini",
             temperature=0,
-        ).with_structured_output(BatchIntentionResult)
+        ).with_structured_output(BatchTravelingTypeResult)
 
         self.chain = BATCH_PROMPT | self.llm
 
-    def batch_extract_intentions(
+    def batch_extract_traveling_types(
         self,
-        items: List[ModelIntentionDTO]
+        items: List[ModelTravelingTypeDTO]
     ) -> List[Dict[str, Any]]:
 
         if not items:
@@ -38,25 +38,25 @@ class IntentionExtractionService:
         prompt_items = [item.to_prompt_dict() for item in items]
 
         try:
-            response: BatchIntentionResult = self.chain.invoke(
+            response: BatchTravelingTypeResult = self.chain.invoke(
                 {"items": json.dumps(prompt_items, ensure_ascii=False)}
             )
 
             results = []
             for r in response.results:
                 results.append({
-                    "intention_type": r.intention_type,
+                    "traveling_type": r.traveling_type,
                 })
 
             logger.info(f"Batch processed {len(results)} items")
             return results
 
         except Exception:
-            logger.exception("Batch intention extraction failed")
+            logger.exception("Batch traveling type extraction failed")
 
             return [
                 {
-                    "intention_type": "other",
+                    "traveling_type": "other",
                 }
                 for _ in items
             ]

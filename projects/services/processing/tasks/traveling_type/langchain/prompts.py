@@ -5,7 +5,7 @@ BATCH_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You extract intention from user comments."
+            "You extract traveling type from user comments."
         ),
         (
             "human",

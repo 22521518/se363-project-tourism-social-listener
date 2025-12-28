@@ -14,21 +14,23 @@ import enum
 
 Base = declarative_base()
 
-class IntentionType(str, enum.Enum):
-    """Enumeration of possible intention types."""
-    QUESTION = "question"
-    FEEDBACK = "feedback"
-    COMPLAINT = "complaint"
-    SUGGESTION = "suggestion"
-    PRAISE = "praise"
-    REQUEST = "request"
-    DISCUSSION = "discussion"
-    SPAM = "spam"
+class TravelingType(str, enum.Enum):
+    """Types of travel intentions."""
+    BUSINESS = "business"
+    LEISURE = "leisure"
+    ADVENTURE = "adventure"
+    BACKPACKING = "backpacking"
+    LUXURY = "luxury"
+    BUDGET = "budget"
+    SOLO = "solo"
+    GROUP = "group"
+    FAMILY = "family"
+    ROMANTIC = "romantic"
     OTHER = "other"
     
-class IntentionModel(Base):
+class TravelingTypeModel(Base):
     """ORM model for intention extraction results."""
-    __tablename__ = "intentions"
+    __tablename__ = "traveling_types"
     
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -41,11 +43,11 @@ class IntentionModel(Base):
     raw_text = Column(Text, nullable=False)
     
     # Analysis results
-    intention_type = Column(
-        Enum(IntentionType),
+    traveling_type = Column(
+        Enum(TravelingType),
         nullable=True,
         index=True
-    )  # question, feedback, complaint, suggestion, praise, request, discussion, spam, other
+    )  
     
     # Metadata
     created_at = Column(
@@ -64,13 +66,13 @@ class IntentionModel(Base):
     
     # Indexes and constraints
     __table_args__ = (
-        Index('idx_intentions_source_unique', 'source_id', 'source_type', unique=True),
-        Index('idx_intentions_type', 'intention_type',),
+        Index('idx_traveling_types_source_unique', 'source_id', 'source_type', unique=True),
+        Index('idx_traveling_type', 'traveling_type',),
 
     )
     
     def __repr__(self) -> str:
-        return f"<IntentionModel(id={self.id}, type={self.intention_type})>"
+        return f"<IntentionModel(id={self.id}, type={self.traveling_type})>"
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary."""
@@ -79,7 +81,7 @@ class IntentionModel(Base):
             "source_id": self.source_id,
             "source_type": self.source_type,
             "raw_text": self.raw_text,
-            "intention_type": self.intention_type,
+            "traveling_type": self.traveling_type,
             "created_at": self.created_at.isoformat() if self.created_at else None,
          
         }
@@ -91,18 +93,18 @@ class IntentionModel(Base):
             source_id=data.get("source_id"),
             source_type=data.get("source_type", "youtube_comment"),
             raw_text=data.get("raw_text"),
-            intention_type=data.get("intention_type"),
+            traveling_type=data.get("traveling_type"),
           
         )
 
 
 # ==================== DATABASE UTILITIES ====================
 
-def create_intention_tables(engine):
-    """Create intention tables in the database."""
+def create_traveling_type_tables(engine):
+    """Create traveling type tables in the database."""
     Base.metadata.create_all(engine)
 
 
-def drop_intention_tables(engine):
-    """Drop intention tables from the database. USE WITH CAUTION!"""
+def drop_traveling_tables(engine):
+    """Drop traveling tables from the database. USE WITH CAUTION!"""
     Base.metadata.drop_all(engine)

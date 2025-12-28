@@ -160,13 +160,6 @@ def run_spark_consumer():
                 source_type=dto.source_type,
                 raw_text=dto.text,
                 intention_type=result["intention_type"],
-                sentiment=result["sentiment"],
-                confidence_score=1.0,  # GPT structured output → high confidence
-                processed_at=now,
-                model_used=result["model_used"],
-                processing_time_ms=0,
-                entities=[],
-                topics=[],
             ))
         dao.save_batch(intention_dtos)
         

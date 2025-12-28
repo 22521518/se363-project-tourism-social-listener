@@ -9,12 +9,10 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
 import logging
 
-from .models import Base, IntentionModel
+from .models import Base, IntentionModel,IntentionType
 from .dto import (
     IntentionDTO, 
     IntentionStatsDTO,
-    IntentionType,
-    SentimentType
 )
 
 from .config import DatabaseConfig
@@ -66,11 +64,6 @@ class IntentionDAO:
                     source_type=intention_dto.source_type,
                     raw_text=intention_dto.raw_text,
                     intention_type=intention_dto.intention_type.value,
-                    sentiment=intention_dto.sentiment.value,
-                 
-                    processed_at=intention_dto.processed_at,
-                    model_used=intention_dto.model_used,
-                   
                 )
                 
                 session.add(intention_model)
@@ -113,11 +106,6 @@ class IntentionDAO:
                         source_type=dto.source_type,
                         raw_text=dto.raw_text,
                         intention_type=dto.intention_type.value,
-                        sentiment=dto.sentiment.value,
-                     
-                        processed_at=dto.processed_at,
-                        model_used=dto.model_used,
-                     
                     )
                     models.append(model)
 
@@ -160,9 +148,6 @@ class IntentionDAO:
                     # Update existing
                     existing.raw_text = intention_dto.raw_text
                     existing.intention_type = intention_dto.intention_type.value
-                    existing.sentiment = intention_dto.sentiment.value
-                    existing.processed_at = intention_dto.processed_at
-                    existing.model_used = intention_dto.model_used
                     
                     logger.info(f"Updated intention for source_id={intention_dto.source_id}")
                     return self._model_to_dto(existing)
@@ -195,7 +180,7 @@ class IntentionDAO:
         try:
             with self.get_session() as session:
                 intentions = session.query(IntentionModel).order_by(
-                    IntentionModel.processed_at.desc()
+                    IntentionModel.created_at.desc()
                 ).limit(limit).offset(offset).all()
                 
                 return [self._model_to_dto(i) for i in intentions]
@@ -229,11 +214,6 @@ class IntentionDAO:
                 # Update fields
                 existing.raw_text = intention_dto.raw_text
                 existing.intention_type = intention_dto.intention_type.value
-                existing.sentiment = intention_dto.sentiment.value
-             
-                existing.processed_at = intention_dto.processed_at
-                existing.model_used = intention_dto.model_used
-             
                 
                 session.flush()
                 return self._model_to_dto(existing)
@@ -269,8 +249,8 @@ class IntentionDAO:
                 # Total processed
                 total = session.query(func.count(IntentionModel.id)).filter(
                     and_(
-                        IntentionModel.processed_at >= start_date,
-                        IntentionModel.processed_at <= end_date
+                        IntentionModel.created_at >= start_date,
+                        IntentionModel.created_at <= end_date
                     )
                 ).scalar() or 0
                 
@@ -280,21 +260,11 @@ class IntentionDAO:
                     func.count(IntentionModel.id)
                 ).filter(
                     and_(
-                        IntentionModel.processed_at >= start_date,
-                        IntentionModel.processed_at <= end_date
+                        IntentionModel.created_at >= start_date,
+                        IntentionModel.created_at <= end_date
                     )
                 ).group_by(IntentionModel.intention_type).all()
                 
-                # By sentiment
-                by_sentiment = session.query(
-                    IntentionModel.sentiment,
-                    func.count(IntentionModel.id)
-                ).filter(
-                    and_(
-                        IntentionModel.processed_at >= start_date,
-                        IntentionModel.processed_at <= end_date
-                    )
-                ).group_by(IntentionModel.sentiment).all()
                 
                 # By source type
                 by_source = session.query(
@@ -302,8 +272,8 @@ class IntentionDAO:
                     func.count(IntentionModel.id)
                 ).filter(
                     and_(
-                        IntentionModel.processed_at >= start_date,
-                        IntentionModel.processed_at <= end_date
+                        IntentionModel.created_at >= start_date,
+                        IntentionModel.created_at <= end_date
                     )
                 ).group_by(IntentionModel.source_type).all()
                 
@@ -313,9 +283,7 @@ class IntentionDAO:
                     period_start=start_date,
                     period_end=end_date,
                     total_processed=total,
-                    by_intention_type={str(k): v for k, v in by_type},
-                    by_sentiment={str(k): v for k, v in by_sentiment},
-                
+                    by_intention_type={k.value: v for k, v in by_type if k is not None},
                     by_source_type={str(k): v for k, v in by_source},
             
                 )
@@ -328,7 +296,6 @@ class IntentionDAO:
                 period_end=end_date,
                 total_processed=0,
                 by_intention_type={},
-                by_sentiment={},
                 by_source_type={},
             )
     
@@ -367,9 +334,4 @@ class IntentionDAO:
             source_type=model.source_type,
             raw_text=model.raw_text,
             intention_type=IntentionType(model.intention_type) if model.intention_type else IntentionType.OTHER,
-            sentiment=SentimentType(model.sentiment) if model.sentiment else SentimentType.NEUTRAL,
-         
-            processed_at=model.processed_at,
-            model_used=model.model_used or "unknown",
-          
         )

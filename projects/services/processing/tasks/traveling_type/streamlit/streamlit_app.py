@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 # Page Configuration
 # ------------------------
 st.set_page_config(
-    page_title="Intention Monitor",
+    page_title="Traveling Type Monitor",
     page_icon="🎯",
     layout="wide"
 )
@@ -26,11 +26,11 @@ BACKEND_AVAILABLE = False
 IMPORT_ERROR_MSG = None
 
 try:
-    from projects.services.processing.tasks.intention.config import DatabaseConfig
-    from projects.services.processing.tasks.intention.dao import IntentionDAO
-    from projects.services.processing.tasks.intention.models import Base,IntentionType
-    from projects.services.processing.tasks.intention.dto import (
-        IntentionDTO
+    from projects.services.processing.tasks.traveling_type.config import DatabaseConfig
+    from projects.services.processing.tasks.traveling_type.dao import TravelingTypeDAO
+    from projects.services.processing.tasks.traveling_type.models import Base,TravelingType
+    from projects.services.processing.tasks.traveling_type.dto import (
+        TravelingTypeDTO
     )
     BACKEND_AVAILABLE = True
 except ImportError as e:
@@ -84,7 +84,7 @@ def get_dao():
             return None
             
         db_config = DatabaseConfig.from_env()
-        dao = IntentionDAO(db_config)
+        dao = TravelingTypeDAO(db_config)
         return dao
     except Exception as e:
         st.error(f"❌ Failed to initialize backend: {e}")
@@ -94,7 +94,7 @@ def get_dao():
 # Data Loading Functions
 # ------------------------
 @st.cache_data(ttl=10)
-def load_intention_statistics():
+def load_traveling_type_statistics():
     """Load overall intention statistics."""
     dao = get_dao()
     if not dao:
@@ -112,14 +112,14 @@ def load_intention_statistics():
         return None
 
 @st.cache_data(ttl=10)
-def load_recent_intentions(limit: int = 100):
+def load_recent_traveling_types(limit: int = 100):
     """Load recent intentions."""
     dao = get_dao()
     if not dao:
         return pd.DataFrame()
     
     try:
-        intentions = dao.get_all_intentions(limit=limit)
+        intentions = dao.get_all_traveling_types(limit=limit)
         
         if not intentions:
             return pd.DataFrame()
@@ -131,34 +131,34 @@ def load_recent_intentions(limit: int = 100):
                 'id': intention.id,
                 'source_id': intention.source_id,
                 'raw_text': intention.raw_text,
-                'intention_type': intention.intention_type.value,
+                'traveling_type': intention.traveling_type.value,
             })
         
         return pd.DataFrame(data)
     except Exception as e:
-        st.warning(f"⚠️ Could not load intentions: {e}")
+        st.warning(f"⚠️ Could not load traveling types: {e}")
         return pd.DataFrame()
 
 # ------------------------
 # Update Form Handler
 # ------------------------
-def show_update_form(intention_row):
+def show_update_form(traveling_type_row):
     """Show modal form to update intention."""
-    st.subheader("✏️ Update Intention")
+    st.subheader("✏️ Update Traveling Type")
     
-    with st.form(key=f"update_form_{intention_row['id']}"):
-        st.text_area("Comment Text", value=intention_row['raw_text'], disabled=True, height=100)
+    with st.form(key=f"update_form_{traveling_type_row['id']}"):
+        st.text_area("Comment Text", value=traveling_type_row['raw_text'], disabled=True, height=100)
         
    
         # Intention type selector
-        intention_types = [t.value for t in IntentionType]
-        current_intention_idx = intention_types.index(intention_row['intention_type'])
+        traveling_types = [t.value for t in TravelingType]
+        current_traveling_type_idx = traveling_types.index(traveling_type_row['traveling_type'])
             
-        new_intention = st.selectbox(
-            "Intention Type",
-            options=intention_types,
-            index=current_intention_idx,
-            key=f"intention_{intention_row['id']}"
+        new_traveling_type = st.selectbox(
+            "Traveling Type",
+            options=traveling_types,
+            index=current_traveling_type_idx,
+            key=f"traveling_type_{traveling_type_row['id']}"
         )
         
         
@@ -171,20 +171,20 @@ def show_update_form(intention_row):
             cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
         
         if submit:
-            handle_update_intention(
-                intention_id=intention_row['id'],
-                source_id=intention_row['source_id'],
-                raw_text=intention_row['raw_text'],
-                new_intention=new_intention,
+            handle_update_traveling_type(
+                traveling_type_id=traveling_type_row['id'],
+                source_id=traveling_type_row['source_id'],
+                raw_text=traveling_type_row['raw_text'],
+                new_traveling_type=new_traveling_type,
             )
-            st.success("✅ Intention updated successfully!")
+            st.success("✅ Traveling type updated successfully!")
             st.rerun()
         
         if cancel:
-            st.session_state.pop('editing_intention', None)
+            st.session_state.pop('editing_traveling_type', None)
             st.rerun()
 
-def handle_update_intention(intention_id, source_id, raw_text, new_intention):
+def handle_update_traveling_type(traveling_type_id, source_id, raw_text, new_traveling_type):
     """Handle intention update."""
     dao = get_dao()
     if not dao:
@@ -193,12 +193,12 @@ def handle_update_intention(intention_id, source_id, raw_text, new_intention):
     
     try:
         # Create updated DTO
-        updated_dto = IntentionDTO(
-            id=intention_id,
+        updated_dto = TravelingTypeDTO(
+            id=traveling_type_id,
             source_id=source_id,
             source_type="youtube_comment",
             raw_text=raw_text,
-            intention_type=IntentionType(new_intention),
+            traveling_type=TravelingType(new_traveling_type),
         )
         
         # Update in database
@@ -206,8 +206,8 @@ def handle_update_intention(intention_id, source_id, raw_text, new_intention):
         
         if result:
             # Clear cache to refresh data
-            load_intention_statistics.clear()
-            load_recent_intentions.clear()
+            load_traveling_type_statistics.clear()
+            load_recent_traveling_types.clear()
         else:
             st.error("❌ Failed to update intention")
             
@@ -237,15 +237,15 @@ def render_statistics_overview(stats):
         )
 
     with col2:
-        most_common_intention = max(
-            stats.by_intention_type.items(),
+        most_common_traveling_type = max(
+            stats.by_traveling_type.items(),
             key=lambda x: x[1],
             default=("N/A", 0),
         )
         st.metric(
-            "Top Intention",
-            most_common_intention[0].title(),
-            f"{most_common_intention[1]:,}"
+            "Top Traveling Type",
+            most_common_traveling_type[0].title(),
+            f"{most_common_traveling_type[1]:,}"
         )
 
     st.divider()
@@ -257,8 +257,8 @@ def render_statistics_overview(stats):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 🧠 By Intention Type")
-        for k, v in sorted(stats.by_intention_type.items(), key=lambda x: -x[1]):
+        st.markdown("### 🧠 By Traveling Type")
+        for k, v in sorted(stats.by_traveling_type.items(), key=lambda x: -x[1]):
             st.write(f"**{k.title()}**: {v:,}")
 
     with col2:
@@ -267,34 +267,34 @@ def render_statistics_overview(stats):
             st.write(f"**{k.title()}**: {v:,}")
     
 
-def render_intention_distribution(stats):
+def render_traveling_type_distribution(stats):
     """Render intention type distribution chart."""
-    if not stats.by_intention_type:
-        st.info("No intention data available")
+    if not stats.by_traveling_type:
+        st.info("No traveling type data available")
         return
     
     # Convert enum keys to readable strings
-    intention_names = [key.value if hasattr(key, 'value') else str(key) 
-                       for key in stats.by_intention_type.keys()]
-    intention_values = list(stats.by_intention_type.values())
+    traveling_type_names = [key.value if hasattr(key, 'value') else str(key) 
+                       for key in stats.by_traveling_type.keys()]
+    traveling_values = list(stats.by_traveling_type.values())
     
     # Create pie chart for intention types
     fig = px.pie(
-        values=intention_values,
-        names=intention_names,
-        title="Intention Type Distribution",
+        values=traveling_values,
+        names=traveling_type_names,
+        title="Traveling Type Distribution",
         hole=0.3
     )
     fig.update_traces(textposition='inside', textinfo='percent+label')
     st.plotly_chart(fig, use_container_width=True)
 
-def render_intentions_table(df):
+def render_traveling_types_table(df):
     """Render intentions table with edit functionality."""
     if df.empty:
-        st.info("📭 No intentions found in the database.")
+        st.info("📭 No traveling type found in the database.")
         return
     
-    st.subheader("📝 Recent Intentions")
+    st.subheader("📝 Recent Traveling Types")
     
     # Format the dataframe for display
     display_df = df.copy()
@@ -302,10 +302,10 @@ def render_intentions_table(df):
     
     # Display table with column configuration
     event = st.dataframe(
-        display_df[['raw_text', 'intention_type']],
+        display_df[['raw_text', 'traveling_type']],
         column_config={
             'raw_text': st.column_config.TextColumn('Comment', width='large'),
-            'intention_type': st.column_config.TextColumn('Intention', width='medium'),
+            'traveling_type': st.column_config.TextColumn('Traveling Type', width='medium'),
         },
         hide_index=True,
         use_container_width=True,
@@ -331,7 +331,7 @@ def render_dashboard():
     """Render the main dashboard with auto-refresh."""
     
     # Load data
-    stats = load_intention_statistics()
+    stats = load_traveling_type_statistics()
     
     if not stats:
         st.warning("⚠️ No statistics available. Make sure the database is running and contains data.")
@@ -344,41 +344,41 @@ def render_dashboard():
     
     # Charts
 
-    render_intention_distribution(stats)
+    render_traveling_type_distribution(stats)
     
    
     
     st.divider()
     
     # Recent Intentions Table
-    intentions_limit = st.slider(
-        "Number of intentions to display",
+    traveling_types_limit = st.slider(
+        "Number of traveling type to display",
         min_value=10,
         max_value=500,
         value=100,
         step=10,
-        key="intentions_limit"
+        key="traveling_types_limit"
     )
     
-    df = load_recent_intentions(limit=intentions_limit)
-    render_intentions_table(df)
+    df = load_recent_traveling_types(limit=traveling_types_limit)
+    render_traveling_types_table(df)
     
     st.divider()
-    st.caption(f"🔄 Last updated: {datetime.now().strftime('%H:%M:%S')} | Intention Monitoring Dashboard")
+    st.caption(f"🔄 Last updated: {datetime.now().strftime('%H:%M:%S')} | Traveling Type Monitoring Dashboard")
 
 # ------------------------
 # Main Application
 # ------------------------
-st.title("🎯 Intention Monitoring Dashboard")
-st.markdown("Real-time monitoring and management of intention extraction results")
+st.title("🎯 Traveling Type Monitoring Dashboard")
+st.markdown("Real-time monitoring and management of traveling type extraction results")
 
 if not BACKEND_AVAILABLE:
     st.error("❌ Backend services are not available. Please check the configuration.")
     st.stop()
 
 # Initialize session state
-if 'editing_intention' not in st.session_state:
-    st.session_state.editing_intention = None
+if 'editing_traveling_type' not in st.session_state:
+    st.session_state.editing_traveling_type = None
 
 # Render the dashboard
 render_dashboard()
@@ -398,22 +398,24 @@ with st.sidebar:
     
     st.subheader("🔄 Refresh Data")
     if st.button("Clear Cache & Refresh", use_container_width=True):
-        load_intention_statistics.clear()
-        load_recent_intentions.clear()
+        load_traveling_type_statistics.clear()
+        load_recent_traveling_types.clear()
         st.rerun()
     
     st.divider()
     
     st.subheader("📖 Legend")
     st.markdown("""
-    **Intention Types:**
-    - 🤔 Question
-    - 💬 Feedback
-    - 😡 Complaint
-    - 💡 Suggestion
-    - 👏 Praise
-    - 🙏 Request
-    - 💭 Discussion
-    - 🚫 Spam
+    **Traveling Types:**
+    - 💼 Business
+    - 🏖️ Leisure
+    - 🏔️ Adventure
+    - 🎒 Backpacking
+    - 💎 Luxury
+    - 💰 Budget
+    - 🚶 Solo
+    - 👥 Group
+    - 👨‍👩‍👧‍👦 Family
+    - 💑 Romantic
     - ❓ Other
     """)
