@@ -1,33 +1,16 @@
-<<<<<<< HEAD
-# Xử lý dữ liệu & Big Data
-pyspark==3.5.1
-=======
 ﻿pyspark==3.5.1
->>>>>>> targeted-absa-2
 sqlalchemy==1.4.52
 psycopg2-binary==2.9.9
 kafka-python-ng==2.2.2
 python-dotenv==1.0.0
-<<<<<<< HEAD
-
-# AI & Machine Learning (Chạy Offline)
-transformers>=4.37.0
-torch
-=======
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 transformers>=4.37.0
->>>>>>> targeted-absa-2
 accelerate
 sentencepiece
 langchain
 langchain-community
 langchain-huggingface
-<<<<<<< HEAD
-
-# Giao diện Web
-=======
 langchain-core             
->>>>>>> targeted-absa-2
 streamlit==1.39.0
 plotly==5.24.1
