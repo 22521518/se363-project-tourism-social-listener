@@ -23,17 +23,18 @@ YouTube Data API v3 connector for the Social Listening Tool. Collects channel me
 
 ## Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| API Manager | `api_manager.py` | YouTube API wrapper with retry logic |
+| Component        | File                  | Purpose                                 |
+| ---------------- | --------------------- | --------------------------------------- |
+| API Manager      | `api_manager.py`      | YouTube API wrapper with retry logic    |
 | Tracking Manager | `tracking_manager.py` | Channel monitoring, new video detection |
-| Kafka Producer | `kafka_producer.py` | Event publishing to Kafka |
-| Kafka Consumer | `kafka_consumer.py` | Event consumption and processing |
-| DAO | `dao.py` | Database operations |
-| ORM Models | `models.py` | SQLAlchemy models |
-| DTOs | `dto.py` | Data transfer objects |
+| Kafka Producer   | `kafka_producer.py`   | Event publishing to Kafka               |
+| Kafka Consumer   | `kafka_consumer.py`   | Event consumption and processing        |
+| DAO              | `dao.py`              | Database operations                     |
+| ORM Models       | `models.py`           | SQLAlchemy models                       |
+| DTOs             | `dto.py`              | Data transfer objects                   |
 
 ## Code Style (Summary)
+
 - Python: PEP 8, type hints, snake_case, python 3.12
 
 ## Quick Start
@@ -124,10 +125,10 @@ comments = await api.fetch_video_comments("dQw4w9WgXcQ", max_results=100)
 
 ### Tracking Modes
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
+| Mode      | Description             | Use Case                 |
+| --------- | ----------------------- | ------------------------ |
 | Real-time | Continuous polling loop | Low-latency requirements |
-| Scheduled | APScheduler intervals | Resource-efficient |
+| Scheduled | APScheduler intervals   | Resource-efficient       |
 
 ```python
 from youtube.tracking_manager import ChannelTrackingManager
@@ -147,11 +148,11 @@ await tracker.start_scheduled_ingestion(interval_minutes=5)
 
 ### Topics
 
-| Topic | Content |
-|-------|---------|
+| Topic              | Content                 |
+| ------------------ | ----------------------- |
 | `youtube.channels` | Channel metadata events |
-| `youtube.videos` | Video metadata events |
-| `youtube.comments` | Comment events |
+| `youtube.videos`   | Video metadata events   |
+| `youtube.comments` | Comment events          |
 
 ### Event Format
 
@@ -232,19 +233,19 @@ See [TESTING.md](./TESTING.md) for detailed testing instructions.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `YOUTUBE_API_KEY` | Yes | - | YouTube Data API v3 key |
-| `KAFKA_BOOTSTRAP_SERVERS` | No | `kafka:9092` | Kafka broker address |
-| `KAFKA_CLIENT_ID` | No | `youtube_ingestion` | Kafka client ID |
-| `DB_HOST` | No | `postgres` | PostgreSQL host |
-| `DB_PORT` | No | `5432` | PostgreSQL port |
-| `DB_NAME` | No | `airflow` | Database name |
-| `DB_USER` | No | `airflow` | Database user |
-| `DB_PASSWORD` | No | `airflow` | Database password |
-| `POLLING_INTERVAL_SECONDS` | No | `300` | Default polling interval |
-| `MAX_VIDEOS_PER_CHANNEL` | No | `50` | Max videos to fetch |
-| `MAX_COMMENTS_PER_VIDEO` | No | `100` | Max comments per video |
+| Variable                         | Required | Default             | Description              |
+| -------------------------------- | -------- | ------------------- | ------------------------ |
+| `YOUTUBE_API_KEY`                | Yes      | -                   | YouTube Data API v3 key  |
+| `KAFKA_BOOTSTRAP_SERVERS`        | No       | `kafka:9092`        | Kafka broker address     |
+| `KAFKA_CLIENT_YOUTUBE_INGEST_ID` | No       | `youtube_ingestion` | Kafka client ID          |
+| `DB_HOST`                        | No       | `postgres`          | PostgreSQL host          |
+| `DB_PORT`                        | No       | `5432`              | PostgreSQL port          |
+| `DB_NAME`                        | No       | `airflow`           | Database name            |
+| `DB_USER`                        | No       | `airflow`           | Database user            |
+| `DB_PASSWORD`                    | No       | `airflow`           | Database password        |
+| `POLLING_INTERVAL_SECONDS`       | No       | `300`               | Default polling interval |
+| `MAX_VIDEOS_PER_CHANNEL`         | No       | `50`                | Max videos to fetch      |
+| `MAX_COMMENTS_PER_VIDEO`         | No       | `100`               | Max comments per video   |
 
 ## File Structure
 

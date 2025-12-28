@@ -7,6 +7,7 @@ A real-time social listening and sentiment analysis platform built for the SE363
 This project collects public social media data, processes it through an event-driven pipeline, and surfaces sentiment insights via an interactive dashboard. The current focus is **Aspect-Based Sentiment Analysis (ABSA)** for tourism-related conversations.
 
 **Key capabilities:**
+
 - Real-time data ingestion from social platforms (YouTube first)
 - NLP enrichment: sentiment, topics, entity extraction
 - Aggregated analytics and trend detection
@@ -36,22 +37,21 @@ projects/
 ├── services/            # Domain services
 │   ├── aggregator/      # Metrics computation
 │   ├── ingestion/       # Social platform connectors
-│   ├── nlp/             # Sentiment and topic extraction
-│   └── processing/      # Data cleaning and normalization
+│   └── processing/      # Data cleaning, normalization, and task-scoped enrichment
 └── agents_plans/        # Work planning and tracking
 ```
 
 ## Tech Stack
 
-| Layer       | Technology                                    |
-|-------------|-----------------------------------------------|
-| Ingestion   | Python, YouTube API                           |
-| Messaging   | Apache Kafka                                  |
-| Processing  | Apache Spark                                  |
-| Storage     | PostgreSQL, OpenSearch (planned)              |
-| NLP         | Google Gemini / Vertex AI, VADER, spaCy       |
-| Dashboard   | Streamlit, Plotly                             |
-| API         | Node.js / Express (planned)                   |
+| Layer      | Technology                                |
+| ---------- | ----------------------------------------- |
+| Ingestion  | Python, YouTube API                       |
+| Messaging  | Apache Kafka                              |
+| Processing | Apache Spark                              |
+| Storage    | PostgreSQL, OpenSearch (planned)          |
+| NLP        | LLM (provider configurable), VADER, spaCy |
+| Dashboard  | Streamlit, Plotly                         |
+| API        | Node.js / Express (planned)               |
 
 ## Contributing
 

@@ -31,6 +31,8 @@ x-airflow-common: &airflow-common
 services:
   postgres:
     image: postgres:13
+    ports:
+      - "5432:5432" 
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -182,57 +184,24 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  streamlit:
-    build:
-      context: .
-      dockerfile: projects/frontend/web/streamlit/Dockerfile
-    container_name: streamlit
-    command:
-      - "streamlit"
-      - "run"
-      - "/opt/airflow/projects/frontend/web/streamlit/streamlit_app.py"
-      - "--server.port"
-      - "8501"
-      - "--server.address"
-      - "0.0.0.0"
-    ports:
-      - "8501:8501"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=airflow
-      - DB_USER=airflow
-      - DB_PASSWORD=airflow
-      - PYTHONPATH=/opt/airflow
-    volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
-    depends_on:
-      airflow-webserver:
-        condition: service_healthy
-      airflow-scheduler:
-        condition: service_healthy
-      airflow-worker:
-        condition: service_healthy
-      airflow-triggerer:
-        condition: service_healthy
 
-  youtube-monitor:
+
+  intention-monitor:
     build:
       context: .
-      dockerfile: projects/services/ingestion/youtube/web/streamlit/Dockerfile
-    container_name: youtube-monitor
+      dockerfile: projects/services/processing/tasks/intention/streamlit/Dockerfile
+    container_name: inetention-monitor
     command:
       - "streamlit"
       - "run"
-      - "/opt/airflow/projects/services/ingestion/youtube/web/streamlit/streamlit_app.py"
+      - "/opt/airflow/projects/services/processing/tasks/intention/streamlit/streamlit_app.py"
       - "--server.port"
-      - "8502"
+      - "8503"
       - "--server.address"
       - "0.0.0.0"
     ports:
-      - "8502:8502"
+      - "8503:8503"
     environment:
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=airflow
@@ -244,6 +213,34 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  traveling-type-monitor:
+      build:
+        context: .
+        dockerfile: projects/services/processing/tasks/traveling_type/streamlit/Dockerfile
+      container_name: traveling-type-monitor
+      command:
+        - "streamlit"
+        - "run"
+        - "/opt/airflow/projects/services/processing/tasks/traveling_type/streamlit/streamlit_app.py"
+        - "--server.port"
+        - "8504"
+        - "--server.address"
+        - "0.0.0.0"
+      ports:
+        - "8504:8504"
+      environment:
+        - DB_HOST=postgres
+        - DB_PORT=5432
+        - DB_NAME=airflow
+        - DB_USER=airflow
+        - DB_PASSWORD=airflow
+        - PYTHONPATH=/opt/airflow
+      volumes:
+        - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
+      depends_on:
+        postgres:
+          condition: service_healthy
 
   zookeeper:
     image: zookeeper:3.8

@@ -3,7 +3,7 @@
 > Planning artifacts go in `agents_plans/`.
 
 ## Steps
-1. Plan in `agents_plans/task/`
+1. Plan in `agents_plans/tasks/`
 2. Define TypeScript interfaces/classes
 3. Document field types and constraints
 

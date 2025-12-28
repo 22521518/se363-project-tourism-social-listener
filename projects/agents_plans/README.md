@@ -4,7 +4,7 @@ The canonical area for short plans, epics, and task tracking used by contributor
 
 Folder layout (recommended):
 
-- `task/` — single, well-scoped work items.
+- `tasks/` — single, well-scoped work items.
 - `module_or_features/` — grouped feature plans owned by a module.
 - `epic/` — cross-cutting initiatives spanning multiple modules.
 - `in_progress/` — move items here when active.
@@ -24,7 +24,7 @@ Usage:
 
 This directory is the canonical place for agents to plan and track their work. Structure:
 
-- `task/` — single tasks and tickets
+- `tasks/` — single tasks and tickets
 - `epic/` — larger epics spanning multiple modules
 - `module_or_features/` — feature-level plans grouped by module
 - `in_progress/` — items currently being worked on

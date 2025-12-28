@@ -1,0 +1,30 @@
+# Location Extraction Module Dependencies
+# ========================================
+
+# Core Utilities
+# Using specific version to satisfy langchain-community constraints
+numpy>=1.26.2
+pandas>=2.0.0
+
+# System Utilities (Fixing environment dependency errors)
+psutil>=5.9.0
+Jinja2>=3.0.0
+MarkupSafe>=2.0.0
+
+# LangChain Core
+langchain>=0.1.0
+langchain-core>=0.1.0
+
+# LLM Provider Integrations
+langchain-google-genai>=0.0.1      # Google Gemini
+langchain-together>=0.0.1          # TogetherAI
+
+# Data Validation & Configuration
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# JSON Schema Validation
+jsonschema>=4.0.0
+
+# Environment Variable Loading
+python-dotenv>=1.0.0
