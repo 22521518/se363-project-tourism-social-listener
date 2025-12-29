@@ -101,7 +101,8 @@ def process_batch(batch_df, batch_id):
                  
 def run_spark_consumer():
     spark = SparkSession.builder \
-        .appName("IntentionExtraction") \
+        .appName("IntentionExtractionConsumer") \
+        .config("spark.sql.streaming.checkpointLocation", "/tmp/spark-checkpoints/intention-extraction") \
         .getOrCreate()
         
     spark.sparkContext.setLogLevel("WARN")

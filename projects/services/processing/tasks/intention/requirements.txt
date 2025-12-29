@@ -22,7 +22,7 @@ python-dotenv
 # bitsandbytes==0.45.0
 
 # Optional: For PostgreSQL
-# psycopg2-binary==2.9.10
+psycopg2-binary==2.9.10
 
 # Optional: For MySQL
 # pymysql==1.1.1
