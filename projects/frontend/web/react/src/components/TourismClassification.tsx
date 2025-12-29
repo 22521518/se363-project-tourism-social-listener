@@ -95,8 +95,9 @@ export function TourismClassification({ filters }: TourismClassificationProps) {
 
         {/* By Geography */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm text-gray-700 mb-2">By Geography</h3>
-          <div className="space-y-2">
+          <h3 className="text-sm text-gray-700 mb-1">By Geography</h3>
+          <p className="text-xs text-gray-500 mb-3">Origin: Vietnam</p>
+          <div className="space-y-3">
             {geoLoading ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -110,8 +111,15 @@ export function TourismClassification({ filters }: TourismClassificationProps) {
               geoData.map((item) => (
                 <div key={item.name} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{item.name}</span>
-                    <span className="text-gray-600">{item.value}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 font-medium">{item.name}</span>
+                      <span className="text-xs text-gray-400">
+                        {item.name === 'Domestic' && '(Vietnam)'}
+                        {item.name === 'Regional' && '(South East Asia)'}
+                        {item.name === 'International' && '(World)'}
+                      </span>
+                    </div>
+                    <span className="text-gray-600 font-semibold">{item.value.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
