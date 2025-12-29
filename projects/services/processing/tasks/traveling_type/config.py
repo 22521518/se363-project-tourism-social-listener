@@ -26,7 +26,7 @@ class KafkaConfig():
         """Load Kafka config from environment variables."""
         return cls(
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
-            topic=os.getenv("KAFKA_TOPIC", "youtube-comments"),
+            topic=os.getenv("KAFKA_TOPIC", "youtube.comments"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "traveling_type_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "traveling-type-extraction-group"),
             max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "100")),

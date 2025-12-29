@@ -15,7 +15,7 @@ import os
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/setup_venv.sh")
-VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/.venv_unified")
+VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/.venv")
 
 default_args = {
     'owner': 'airflow',
