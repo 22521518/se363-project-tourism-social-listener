@@ -9,6 +9,7 @@ from typing import Optional, List, Callable, Awaitable, AsyncIterator
 from dataclasses import dataclass
 
 from kafka import KafkaConsumer as KafkaConsumerClient
+from kafka import KafkaProducer as KafkaProducerClient
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import NoBrokersAvailable, TopicAlreadyExistsError
 
@@ -83,6 +84,9 @@ class YouTubeKafkaConsumer:
         )
 
         topics = [
+            self.config.raw_channels_topic,
+            self.config.raw_videos_topic,
+            self.config.raw_comments_topic,
             self.config.channels_topic,
             self.config.videos_topic,
             self.config.comments_topic,
@@ -119,9 +123,9 @@ class YouTubeKafkaConsumer:
             return
         
         topics = topics or [
-            self.config.channels_topic,
-            self.config.videos_topic,
-            self.config.comments_topic,
+            self.config.raw_channels_topic,
+            self.config.raw_videos_topic,
+            self.config.raw_comments_topic,
         ]
         
         # Ensure topics exist
@@ -341,11 +345,12 @@ async def create_youtube_event_processor(
     consumer.connect()
     
     async def router(event: ConsumedEvent):
-        if event.topic == config.channels_topic and on_channel_event:
+        # Determine topic type
+        if event.topic == config.raw_channels_topic and on_channel_event:
             await on_channel_event(event)
-        elif event.topic == config.videos_topic and on_video_event:
+        elif event.topic == config.raw_videos_topic and on_video_event:
             await on_video_event(event)
-        elif event.topic == config.comments_topic and on_comment_event:
+        elif event.topic == config.raw_comments_topic and on_comment_event:
             await on_comment_event(event)
         else:
             logger.debug(f"Unhandled event from topic: {event.topic}")
@@ -368,6 +373,16 @@ async def run_consumer(config, run_once: bool = False, timeout_s: int = 60):
     dao = YouTubeDAO(config.database)
     # dao.init_db() # Workers usually strictly consume, but init is safe
     
+    # Initialize Producer for downstream
+    producer = KafkaProducerClient(
+        bootstrap_servers=config.kafka.bootstrap_servers,
+        client_id=f"{config.kafka.client_id}_processor",
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        key_serializer=lambda k: k.encode("utf-8") if k else None,
+        acks="all",
+        retries=3,
+    )
+    
     async def handle_channel(event):
         try:
             payload = event.value.get("rawPayload")
@@ -386,6 +401,14 @@ async def run_consumer(config, run_once: bool = False, timeout_s: int = 60):
             )
             dao.save_channel(dto, raw_payload=payload)
             logger.info(f"Saved channel {dto.id}")
+            
+            # Produce to public topic
+            producer.send(
+                topic=config.kafka.channels_topic,
+                key=dto.id,
+                value=event.value # Forward the original message or payload? User asked to produce to msg. Let's forward the whole message structure as expected by downstream.
+            )
+            producer.flush()
         except Exception as e:
             logger.error(f"Error handling channel: {e}")
 
@@ -409,6 +432,14 @@ async def run_consumer(config, run_once: bool = False, timeout_s: int = 60):
             )
             dao.save_video(dto, raw_payload=payload)
             logger.info(f"Saved video {dto.id}")
+            
+            # Produce to public topic
+            producer.send(
+                topic=config.kafka.videos_topic,
+                key=dto.id,
+                value=event.value
+            )
+            producer.flush()
         except Exception as e:
             logger.error(f"Error handling video: {e}")
 
@@ -430,6 +461,14 @@ async def run_consumer(config, run_once: bool = False, timeout_s: int = 60):
             )
             dao.save_comment(dto, raw_payload=payload)
             logger.info(f"Saved comment {dto.id}")
+            
+            # Produce to public topic
+            producer.send(
+                topic=config.kafka.comments_topic,
+                key=dto.id,
+                value=event.value
+            )
+            producer.flush()
         except Exception as e:
             logger.error(f"Error handling comment: {e}")
 

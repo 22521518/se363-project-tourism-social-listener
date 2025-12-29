@@ -48,12 +48,13 @@ def get_db_config_dict():
         # Fallback or fail
         return {}
 
-def process_partition(iterator, db_config_dict):
+def process_partition(iterator, db_config_dict, kafka_config_dict):
     """
     Process a partition of data on the executor.
     Initializes DAO once per partition.
+    Also initializes Kafka Producer to forward messages.
     """
-    if not db_config_dict:
+    if not db_config_dict or not kafka_config_dict:
         return
 
     # Reconstruct config object
@@ -72,12 +73,29 @@ def process_partition(iterator, db_config_dict):
     db_config = SimpleConfig(db_config_dict)
     dao = YouTubeDAO(db_config)
     
+    # Initialize Kafka Producer
+    from kafka import KafkaProducer
+    producer = None
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=kafka_config_dict["bootstrap_servers"],
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            key_serializer=lambda k: k.encode("utf-8") if k else None,
+            acks="all",
+            retries=3
+        )
+    except Exception as e:
+        print(f"Error initializing Kafka Producer in Spark executor: {e}")
+        # Proceeding without producer might be bad, but let's try to process at least
+
     # We might need to handle connection issues gracefully
     try:
         # dao.init_db() # Avoid calling DDL in workers
         pass
     except:
         pass
+
+    topic_map = kafka_config_dict["topic_map"]
 
     for row in iterator:
         try:
@@ -93,7 +111,11 @@ def process_partition(iterator, db_config_dict):
             if not raw_payload:
                 continue
             
+            output_topic = topic_map.get(topic)
+            saved_id = None
+            
             # Map based on topic/entityType
+            # Note: topic here is the raw topic name
             if "channels" in topic:
                 dto = ChannelDTO(
                     id=raw_payload["id"],
@@ -108,6 +130,7 @@ def process_partition(iterator, db_config_dict):
                     country=raw_payload["country"],
                 )
                 dao.save_channel(dto, raw_payload=raw_payload)
+                saved_id = dto.id
                 
             elif "videos" in topic:
                 dto = VideoDTO(
@@ -125,6 +148,7 @@ def process_partition(iterator, db_config_dict):
                     category_id=raw_payload["category_id"],
                 )
                 dao.save_video(dto, raw_payload=raw_payload)
+                saved_id = dto.id
                 
             elif "comments" in topic:
                 dto = CommentDTO(
@@ -140,11 +164,25 @@ def process_partition(iterator, db_config_dict):
                     reply_count=raw_payload["reply_count"],
                 )
                 dao.save_comment(dto, raw_payload=raw_payload)
+                saved_id = dto.id
 
+            # Produce to downstream topic
+            if producer and output_topic and saved_id:
+                producer.send(
+                    topic=output_topic,
+                    key=saved_id,
+                    value=json.loads(payload_str) # Send original payload
+                )
+                
         except Exception as e:
             print(f"Error processing row: {e}")
 
-            print(f"Error processing row: {e}")
+    if producer:
+        try:
+            producer.flush()
+            producer.close()
+        except:
+            pass
 
 def ensure_topics_exist(kafka_cfg):
     """Ensure Kafka topics exist before Spark tries to read them."""
@@ -155,12 +193,22 @@ def ensure_topics_exist(kafka_cfg):
         )
         
         topics = [
+            NewTopic(name=kafka_cfg.raw_channels_topic, num_partitions=1, replication_factor=1),
+            NewTopic(name=kafka_cfg.raw_videos_topic, num_partitions=1, replication_factor=1),
+            NewTopic(name=kafka_cfg.raw_comments_topic, num_partitions=1, replication_factor=1),
             NewTopic(name=kafka_cfg.channels_topic, num_partitions=1, replication_factor=1),
             NewTopic(name=kafka_cfg.videos_topic, num_partitions=1, replication_factor=1),
             NewTopic(name=kafka_cfg.comments_topic, num_partitions=1, replication_factor=1),
         ]
         
-        admin.create_topics(topics)
+        try:
+            for topic in topics:
+                admin.create_topics([topic])
+                print(f"Created topic: {topic.name}")
+
+        except TopicAlreadyExistsError:
+            print(f"Topic already exists: {topic.name}")
+
         print("Created Kafka topics via Spark Consumer init")
         
     except TopicAlreadyExistsError:
@@ -192,8 +240,18 @@ def run_spark_consumer():
         print(f"Failed to load config: {e}")
         return
 
-    # Subscribe to all topics
-    topics = f"{kafka_cfg.channels_topic},{kafka_cfg.videos_topic},{kafka_cfg.comments_topic}"
+    # Create simple kafka config dict for workers
+    kafka_config_dict = {
+        "bootstrap_servers": kafka_cfg.bootstrap_servers,
+        "topic_map": {
+            kafka_cfg.raw_channels_topic: kafka_cfg.channels_topic,
+            kafka_cfg.raw_videos_topic: kafka_cfg.videos_topic,
+            kafka_cfg.raw_comments_topic: kafka_cfg.comments_topic,
+        }
+    }
+
+    # Subscribe to raw topics
+    topics = f"{kafka_cfg.raw_channels_topic},{kafka_cfg.raw_videos_topic},{kafka_cfg.raw_comments_topic}"
     
     print(f"Subscribing to topics: {topics}")
     
@@ -221,7 +279,7 @@ def run_spark_consumer():
     def process_batch(batch_df, batch_id):
         print(f"Processing batch {batch_id} with {batch_df.count()} records")
         # Use simple closure to pass config
-        batch_df.foreachPartition(lambda iter: process_partition(iter, db_config_dict))
+        batch_df.foreachPartition(lambda iter: process_partition(iter, db_config_dict, kafka_config_dict))
 
     # Write Stream
     writer = processed_df \

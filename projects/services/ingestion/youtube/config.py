@@ -31,9 +31,15 @@ class KafkaConfig:
     client_id: str
     
     # Topic names
+    # Topic names
     channels_topic: str = "youtube.channels"
     videos_topic: str = "youtube.videos"
     comments_topic: str = "youtube.comments"
+    
+    # Internal Topic names (for raw data)
+    raw_channels_topic: str = "youtube.raw.channels"
+    raw_videos_topic: str = "youtube.raw.videos"
+    raw_comments_topic: str = "youtube.raw.comments"
     
     @classmethod
     def from_env(cls) -> "KafkaConfig":

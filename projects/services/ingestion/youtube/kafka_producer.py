@@ -99,6 +99,22 @@ class YouTubeKafkaProducer:
                     num_partitions=1,
                     replication_factor=1
                 ),
+                # Create raw topics
+                NewTopic(
+                    name=self.config.raw_channels_topic,
+                    num_partitions=1,
+                    replication_factor=1
+                ),
+                NewTopic(
+                    name=self.config.raw_videos_topic,
+                    num_partitions=1,
+                    replication_factor=1
+                ),
+                NewTopic(
+                    name=self.config.raw_comments_topic,
+                    num_partitions=1,
+                    replication_factor=1
+                ),
             ]
             
             admin.create_topics(topics)
@@ -136,7 +152,7 @@ class YouTubeKafkaProducer:
         )
         
         self._producer.send(
-            topic=self.config.channels_topic,
+            topic=self.config.raw_channels_topic,
             key=channel.id,
             value=message.to_dict(),
         )
@@ -161,7 +177,7 @@ class YouTubeKafkaProducer:
         )
         
         self._producer.send(
-            topic=self.config.videos_topic,
+            topic=self.config.raw_videos_topic,
             key=video.id,
             value=message.to_dict(),
         )
@@ -186,7 +202,7 @@ class YouTubeKafkaProducer:
         )
         
         self._producer.send(
-            topic=self.config.comments_topic,
+            topic=self.config.raw_comments_topic,
             key=comment.id,
             value=message.to_dict(),
         )
