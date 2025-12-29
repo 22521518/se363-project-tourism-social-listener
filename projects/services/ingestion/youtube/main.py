@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import logging
 import sys
+from datetime import UTC
 from datetime import datetime
 from pathlib import Path
 
@@ -339,7 +340,7 @@ async def run_db_driven_ingestion(config: IngestionConfig, interval_minutes: int
                     # But it drives the logic, so updating it here is correct for the scheduler.
                     dao.update_tracking_state(
                         channel_id, 
-                        last_checked=datetime.now(datetime.UTC),
+                        last_checked=datetime.now(UTC),
                         # last_video_published is updated by consumer ideally, or we can leave it
                     )
                     

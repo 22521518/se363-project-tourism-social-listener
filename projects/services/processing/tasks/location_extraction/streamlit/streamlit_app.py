@@ -5,7 +5,7 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import plotly.express as px
 import json
 
@@ -129,8 +129,8 @@ def load_statistics():
         return None
     try:
         return dao.get_stats(
-            start_date=datetime.utcnow() - timedelta(days=30),
-            end_date=datetime.utcnow()
+            start_date=datetime.now(UTC) - timedelta(days=30),
+            end_date=datetime.now(UTC)
         )
     except Exception as e:
         st.warning(f"⚠️ Could not load statistics: {e}")
@@ -552,7 +552,7 @@ def render_kafka_tab():
                     "source_id": final_source_id,
                     "source_type": "message",
                     "text": text_content,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 }
                 try:
                     # Record the message in history
@@ -621,7 +621,7 @@ def render_kafka_tab():
                             "source_id": msg_id,
                             "source_type": str(row.get('source_type', 'unknown')),
                             "text": str(row.get('text', '')),
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(UTC).isoformat()
                         }
                         try:
                             producer.send(kafka_config.input_topic, key=message['source_id'], value=message)
