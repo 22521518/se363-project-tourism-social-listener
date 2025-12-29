@@ -23,6 +23,7 @@ class TravelingTypeExtractionService:
         self.llm = ChatOpenAI(
             model=model_config.model_name,
             temperature=0,
+             max_tokens=model_config.max_tokens,
             api_key=model_config.openai_api_key  # Pass API key from config
         ).with_structured_output(BatchTravelingTypeResult)
 

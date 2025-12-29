@@ -80,13 +80,11 @@ class ModelTravelingTypeDTO:
     source_id: str
     source_type: str
     
-    video_title: str = "Unknown"
     
     def to_prompt_dict(self) -> dict:
         """Convert to dict format expected by the batch prompt."""
         return {
             "text": self.text,
-            "video_title": self.video_title
         }
     
 # Helper functions for creating DTOs from raw data
