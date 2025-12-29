@@ -9,7 +9,7 @@ export function Header({ selectedView, setSelectedView }: HeaderProps) {
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: BarChart3 },
     { id: 'posts' as const, label: 'Posts Analysis', icon: FileText },
-    { id: 'itinerary' as const, label: 'Itinerary Tracker', icon: Route }
+    // { id: 'itinerary' as const, label: 'Itinerary Tracker', icon: Route }
   ];
 
   return (

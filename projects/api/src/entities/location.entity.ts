@@ -15,6 +15,16 @@ export interface PrimaryLocation {
   confidence: number;
 }
 
+/**
+ * Structure for approved extraction result stored in approved_result column.
+ */
+export interface ApprovedResult {
+  locations: Location[];
+  primary_location: PrimaryLocation | null;
+  overall_score: number;
+  meta?: Record<string, unknown>;
+}
+
 export interface LocationExtraction {
   id: string;
   source_id: string;
@@ -24,6 +34,7 @@ export interface LocationExtraction {
   primary_location: PrimaryLocation | null;
   overall_score: number;
   is_approved: boolean;
+  approved_result: ApprovedResult | null;
   created_at: string;
 }
 

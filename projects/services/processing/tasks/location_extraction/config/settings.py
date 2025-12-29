@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     db_name: str = Field("airflow", description="Database name")
 
     # Kafka Configuration
-    kafka_bootstrap_servers: str = Field("localhost:9092", description="Kafka bootstrap servers")
+    kafka_bootstrap_servers: str = Field("kafka:9092", description="Kafka bootstrap servers")
     kafka_topic_location_input: str = Field("location-extraction-input", description="Input topic for location extraction")
     kafka_topic_location_output: str = Field("location-extraction-output", description="Output topic for location extraction")
     kafka_consumer_group: str = Field("location-extraction-consumer", description="Consumer group ID")

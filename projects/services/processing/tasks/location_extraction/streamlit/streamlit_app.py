@@ -5,7 +5,7 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import plotly.express as px
 import json
 
@@ -129,8 +129,8 @@ def load_statistics():
         return None
     try:
         return dao.get_stats(
-            start_date=datetime.utcnow() - timedelta(days=30),
-            end_date=datetime.utcnow()
+            start_date=datetime.now(UTC) - timedelta(days=30),
+            end_date=datetime.now(UTC)
         )
     except Exception as e:
         st.warning(f"⚠️ Could not load statistics: {e}")
@@ -187,18 +187,33 @@ def clear_caches():
 # ========================
 # TAB 1: Dashboard
 # ========================
+def get_effective_extraction(row):
+    """
+    Get the effective extraction result.
+    If approved and approved_result exists, use it. Otherwise use extraction_result.
+    Returns (effective_dict, is_approved_data: bool)
+    """
+    if row['is_approved'] and row.get('approved_result'):
+        return row['approved_result'], True
+    return row['extraction_result'], False
+
 def render_dashboard_tab():
     st.header("📊 Dashboard")
     
     stats = load_statistics()
     if stats:
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.metric("Total Processed", f"{stats.get('total_processed', 0):,}")
         with c2:
             st.metric("✅ Approved", f"{stats.get('approved_count', 0):,}")
         with c3:
             st.metric("⏳ Pending", f"{stats.get('pending_count', 0):,}")
+        with c4:
+            approval_rate = 0
+            if stats.get('total_processed', 0) > 0:
+                approval_rate = (stats.get('approved_count', 0) / stats.get('total_processed', 0)) * 100
+            st.metric("📈 Approval Rate", f"{approval_rate:.1f}%")
     
     st.divider()
     
@@ -209,23 +224,62 @@ def render_dashboard_tab():
         st.info("📭 No extractions found.")
         return
     
-    display_df = df.copy()
-    display_df['raw_text'] = display_df['raw_text'].str[:80] + '...'
-    display_df['status'] = display_df['is_approved'].apply(lambda x: "✅ Approved" if x else "⏳ Pending")
+    # Build display dataframe using effective results
+    display_data = []
+    for idx, row in df.iterrows():
+        effective_result, is_approved_data = get_effective_extraction(row)
+        
+        # Get primary location from effective result
+        if effective_result:
+            if isinstance(effective_result, dict):
+                primary = effective_result.get('primary_location', {})
+                primary_name = primary.get('name', 'N/A') if isinstance(primary, dict) else 'N/A'
+                loc_count = len(effective_result.get('locations', []))
+                score = effective_result.get('overall_score', 0)
+            else:
+                primary_name = 'N/A'
+                loc_count = 0
+                score = 0
+        else:
+            primary_name = row.get('primary_location', 'N/A')
+            loc_count = row.get('location_count', 0)
+            score = row.get('overall_score', 0)
+        
+        # Status and data source indicator
+        if row['is_approved']:
+            status = "✅ Approved"
+            data_source = "🔵" if is_approved_data else "⚪"  # Blue if using approved data
+        else:
+            status = "⏳ Pending"
+            data_source = "⚪"
+        
+        display_data.append({
+            'raw_text': row['raw_text'][:80] + '...' if len(row['raw_text']) > 80 else row['raw_text'],
+            'primary_location': primary_name,
+            'location_count': loc_count,
+            'overall_score': score,
+            'status': status,
+            'data': data_source
+        })
+    
+    display_df = pd.DataFrame(display_data)
     
     st.dataframe(
-        display_df[['raw_text', 'primary_location', 'location_count', 'overall_score', 'status']],
+        display_df,
         column_config={
             'raw_text': st.column_config.TextColumn('Text', width='large'),
             'primary_location': 'Primary Location',
             'location_count': 'Locs',
             'overall_score': st.column_config.NumberColumn("Score", format="%.2f"),
-            'status': 'Status'
+            'status': 'Status',
+            'data': st.column_config.TextColumn("Data", help="🔵 = Using approved data, ⚪ = Using original data")
         },
         hide_index=True,
-        width='stretch'
+        use_container_width=True
     )
     
+    # Legend
+    st.caption("🔵 = Using approved result | ⚪ = Using original extraction")
     st.caption(f"🔄 Last updated: {datetime.now().strftime('%H:%M:%S')}")
 
 # ========================
@@ -498,7 +552,7 @@ def render_kafka_tab():
                     "source_id": final_source_id,
                     "source_type": "message",
                     "text": text_content,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 }
                 try:
                     # Record the message in history
@@ -567,7 +621,7 @@ def render_kafka_tab():
                             "source_id": msg_id,
                             "source_type": str(row.get('source_type', 'unknown')),
                             "text": str(row.get('text', '')),
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(UTC).isoformat()
                         }
                         try:
                             producer.send(kafka_config.input_topic, key=message['source_id'], value=message)

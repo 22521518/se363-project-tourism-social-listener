@@ -37,7 +37,12 @@ with DAG(
     run_spark_consumer = BashOperator(
         task_id='run_spark_consumer',
         bash_command=f"bash {SPARK_CONSUMER_SCRIPT}",
-        env={**os.environ, "VENV_DIR": VENV_PATH},
+        env={
+            **os.environ, 
+            "VENV_DIR": VENV_PATH,
+            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
+            "DB_HOST": "postgres"
+        },
     )
 
     setup_env >> run_spark_consumer
