@@ -1,11 +1,12 @@
-# Core LangChain
-langchain
-langchain-core
-langchain-community
-langchain-openai
+# Core LangChain - you only need langchain and langchain-openai
+langchain>=0.3.0
+langchain-openai>=0.2.0
+
+# Pydantic (required for LangChain v2)
+pydantic>=2.0.0,<3.0.0
 
 # PySpark
-pyspark
+pyspark==3.5.1
 
 # Database
 sqlalchemy

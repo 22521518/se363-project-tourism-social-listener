@@ -62,7 +62,43 @@ def ensure_topics_exist(kafka_cfg):
             pass
 
 
-            
+
+  # Process Batch Logic
+def process_batch(batch_df, batch_id):
+    if batch_df.isEmpty():
+        return
+    logger.info(f"Processing batch {batch_id}")
+    
+    # Load consumer config for DB connection
+    consumer_cfg = ConsumerConfig.from_env()
+    dao = IntentionDAO(consumer_cfg.database)
+    # 1️⃣ Collect batch rows (small batches only!)
+    rows = batch_df.collect()
+    # 2️⃣ Convert rows → DTOs
+    items: list[ModelIntentionDTO] = []
+    for row in rows:
+        items.append(
+            ModelIntentionDTO(
+                text=row.text,
+                video_title=row.video_title or "Unknown",
+                source_id=row.source_id,
+                source_type=row.source_type,
+            )
+        )
+    # 3️⃣ ONE LLM CALL
+    service = IntentionExtractionService(model_config=consumer_cfg.model)
+    results = service.batch_extract_intentions(items)
+    
+    intention_dtos: list[IntentionDTO] = []
+    for dto, result in zip(items, results):
+       intention_dtos.append(IntentionDTO(
+            source_id=dto.source_id,
+            source_type=dto.source_type,
+            raw_text=dto.text,
+            intention_type=result["intention_type"],
+        ))
+    dao.save_batch(intention_dtos)
+                 
 def run_spark_consumer():
     spark = SparkSession.builder \
         .appName("IntentionExtraction") \
@@ -105,53 +141,14 @@ def run_spark_consumer():
         col("value").cast("string").alias("payload_json")
     )
     
-    # Write Stream
+        
+      # Write Stream
     writer = processed_df \
         .writeStream \
         .outputMode("append") \
         .foreachBatch(process_batch) \
         .option("checkpointLocation", "/tmp/spark_checkpoint_intention_extraction") \
         .trigger(processingTime=consumer_cfg.kafka.processing_time)
-
-
-    # Process Batch Logic
-    def process_batch(batch_df, batch_id):
-        if batch_df.isEmpty():
-            return
-
-        logger.info(f"Processing batch {batch_id}")
-        
-        dao = IntentionDAO(consumer_cfg.database)
-
-        # 1️⃣ Collect batch rows (small batches only!)
-        rows = batch_df.collect()
-
-        # 2️⃣ Convert rows → DTOs
-        items: list[ModelIntentionDTO] = []
-        for row in rows:
-            items.append(
-                ModelIntentionDTO(
-                    text=row.text,
-                    video_title=row.video_title or "Unknown",
-                    source_id=row.id,
-                    source_type="comment",
-                )
-            )
-
-        # 3️⃣ ONE LLM CALL
-        service = IntentionExtractionService(model_config=consumer_cfg.model)
-        results = service.batch_extract_intentions(items)
-
-        
-        intention_dtos: list[IntentionDTO] = []
-        for dto, result in zip(items, results):
-           intention_dtos.append(IntentionDTO(
-                source_id=dto.source_id,
-                source_type=dto.source_type,
-                raw_text=dto.text,
-                intention_type=result["intention_type"],
-            ))
-        dao.save_batch(intention_dtos)
         
     # Check for run-once mode
     run_once = "--run-once" in sys.argv

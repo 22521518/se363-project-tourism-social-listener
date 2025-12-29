@@ -8,6 +8,12 @@ AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_RO
 VENV_DIR="${VENV_DIR:-$SERVICE_ROOT/.venv}"
 CONSUMER_SCRIPT="$SERVICE_ROOT/consumer.py"
 
+if [ ! -f "$VENV_DIR/bin/activate" ]; then
+    echo "Error: Virtual environment not found at $VENV_DIR"
+    echo "Please run setup_venv.sh first."
+    exit 1
+fi
+
 source "$VENV_DIR/bin/activate"
 
 # Tạo zip file chứa code task của bạn để Spark thấy
@@ -17,12 +23,13 @@ ZIP_FILE="projects_traveling_type_extraction_${TIMESTAMP}.zip"
 cd "$AIRFLOW_ROOT"
 rm -f projects_traveling_type_extraction_*.zip
 
-python3 - <<'EOF'
+python3 -c "
 import zipfile
 import os
+import sys
 
-target = "projects/services/processing/tasks/traveling_type"
-zip_name = os.environ['ZIP_FILE']
+target = 'projects/services/processing/tasks/traveling_type'
+zip_name = sys.argv[1]
 
 with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as z:
     for root, dirs, files in os.walk(target):
@@ -32,8 +39,8 @@ with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as z:
                 file_path = os.path.join(root, f)
                 arcname = os.path.relpath(file_path, os.getcwd())
                 z.write(file_path, arcname)
-print(f"Created {zip_name}")
-EOF
+print(f'Created {zip_name}')
+" "$ZIP_FILE"
 
 export PYSPARK_PYTHON="$VENV_DIR/bin/python"
 export PYSPARK_DRIVER_PYTHON="$VENV_DIR/bin/python"

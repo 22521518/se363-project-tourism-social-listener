@@ -11,6 +11,7 @@ from ..dto import ModelTravelingTypeDTO
 
 from .prompts import BATCH_PROMPT
 from .schemas import BatchTravelingTypeResult
+from ..config import ModelConfig
 
 logger = logging.getLogger(__name__)
 

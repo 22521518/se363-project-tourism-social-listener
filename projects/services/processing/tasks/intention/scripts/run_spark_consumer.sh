@@ -23,12 +23,13 @@ ZIP_FILE="projects_intetion_extraction_${TIMESTAMP}.zip"
 cd "$AIRFLOW_ROOT"
 rm -f projects_intetion_extraction_*.zip
 
-python3 - <<'EOF'
+python3 -c "
 import zipfile
 import os
+import sys
 
-target = "projects/services/processing/tasks/intetion"
-zip_name = os.environ['ZIP_FILE']
+target = 'projects/services/processing/tasks/intention'
+zip_name = sys.argv[1]
 
 with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as z:
     for root, dirs, files in os.walk(target):
@@ -38,8 +39,8 @@ with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as z:
                 file_path = os.path.join(root, f)
                 arcname = os.path.relpath(file_path, os.getcwd())
                 z.write(file_path, arcname)
-print(f"Created {zip_name}")
-EOF
+print(f'Created {zip_name}')
+" "$ZIP_FILE"
 
 export PYSPARK_PYTHON="$VENV_DIR/bin/python"
 export PYSPARK_DRIVER_PYTHON="$VENV_DIR/bin/python"
