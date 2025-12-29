@@ -15,7 +15,7 @@ import os
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/setup_venv.sh")
-VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/.venv_unified")
+VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/.venv")
 
 default_args = {
     'owner': 'airflow',
@@ -30,7 +30,7 @@ with DAG(
     'traveling_type_extraction_dag',
     default_args=default_args,
     description='Run Traveling Type Extraction Consumer',
-    schedule_interval=timedelta(minutes=15),
+    schedule_interval=timedelta(minutes=30),
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['traveling_type', 'extraction'],

@@ -24,6 +24,7 @@ try:
     from projects.services.processing.tasks.intention.config import ConsumerConfig
     from projects.services.processing.tasks.intention.dao import IntentionDAO
     from projects.services.processing.tasks.intention.dto import IntentionDTO, ModelIntentionDTO
+    from projects.services.processing.tasks.intention.models import IntentionType
 except ImportError as e:
     print(f"Error importing project modules: {e}")
     print("Make sure to run with --py-files projects.zip")
@@ -34,8 +35,33 @@ except ImportError as e:
 
 
 
+payload_schema = StructType([
+    StructField("source", StringType()),
+    StructField("externalId", StringType()),
+    StructField("rawText", StringType()),
+    StructField("createdAt", StringType()),
+    StructField("entityType", StringType()),
+    StructField(
+        "rawPayload",
+        StructType([
+            StructField("text", StringType()),
+            StructField("video_id", StringType()),
+        ])
+    )
+])
 
-            
+def normalize_intention_type(value) -> IntentionType:
+    if isinstance(value, IntentionType):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return IntentionType(value)
+        except ValueError:
+            return IntentionType.OTHER
+
+    return IntentionType.OTHER
+      
 def ensure_topics_exist(kafka_cfg):
     """Ensure Kafka topics exist before Spark tries to read them."""
     try:
@@ -62,10 +88,68 @@ def ensure_topics_exist(kafka_cfg):
             pass
 
 
-            
+
+  # Process Batch Logic
+def process_batch(batch_df, batch_id):
+    if batch_df.isEmpty():
+        print(f"[Batch {batch_id}] Empty batch, skipping")
+        return
+    
+    print(f"[Batch {batch_id}] Processing batch")
+    
+    # Load consumer config for DB connection
+    consumer_cfg = ConsumerConfig.from_env()
+    dao = IntentionDAO(consumer_cfg.database)
+    # 1️⃣ Collect batch rows (small batches only!)
+    rows = batch_df.collect()
+    
+    print(f"[Batch {batch_id}] Collected {len(rows)} rows")
+    
+    # 2️⃣ Convert rows → DTOs
+    items: list[ModelIntentionDTO] = []
+    for row in rows:
+        items.append(
+            ModelIntentionDTO(
+                text=row.text,
+                source_id=row.source_id,
+                source_type=row.source_type,
+            )
+        )
+        
+    if items:
+        print(
+            f"[Batch {batch_id}] First sample text (truncated): "
+            f"{items[0].text[:200]}"
+        )
+        
+    # 3️⃣ ONE LLM CALL
+    service = IntentionExtractionService(model_config=consumer_cfg.model)
+    results = service.batch_extract_intentions(items)
+    
+    intention_dtos: list[IntentionDTO] = []
+    for dto, result in zip(items, results):
+       intention_dtos.append(IntentionDTO(
+            source_id=dto.source_id,
+            source_type=dto.source_type,
+            raw_text=dto.text,
+            intention_type=normalize_intention_type(
+                result.get("intention_type")
+            ),
+        ))
+    try:
+        dao.save_batch(intention_dtos)
+        print(
+            f"[Batch {batch_id}] Saved {len(intention_dtos)} intentions"
+        )
+    except Exception as e:
+        print(
+            f"[Batch {batch_id}] Failed while saving intentions: {e}"
+        )
+                 
 def run_spark_consumer():
     spark = SparkSession.builder \
-        .appName("IntentionExtraction") \
+        .appName("IntentionExtractionConsumer") \
+        .config("spark.sql.streaming.checkpointLocation", "/tmp/spark-checkpoints/intention-extraction") \
         .getOrCreate()
         
     spark.sparkContext.setLogLevel("WARN")
@@ -100,58 +184,24 @@ def run_spark_consumer():
     # We will use the UDF just to demonstrate usage on a computed column if needed, 
     # but for structured streaming, native ops are preferred.
     
-    processed_df = df.select(
-        col("topic"),
-        col("value").cast("string").alias("payload_json")
+    processed_df = (
+    df
+    .select(from_json(col("value").cast("string"), payload_schema).alias("data"))
+    .select(
+        col("data.rawText").alias("text"),
+        col("data.externalId").alias("source_id"),
+        col("data.entityType").alias("source_type"),
     )
+)
     
-    # Write Stream
+        
+      # Write Stream
     writer = processed_df \
         .writeStream \
         .outputMode("append") \
         .foreachBatch(process_batch) \
         .option("checkpointLocation", "/tmp/spark_checkpoint_intention_extraction") \
         .trigger(processingTime=consumer_cfg.kafka.processing_time)
-
-
-    # Process Batch Logic
-    def process_batch(batch_df, batch_id):
-        if batch_df.isEmpty():
-            return
-
-        logger.info(f"Processing batch {batch_id}")
-        
-        dao = IntentionDAO(consumer_cfg.database)
-
-        # 1️⃣ Collect batch rows (small batches only!)
-        rows = batch_df.collect()
-
-        # 2️⃣ Convert rows → DTOs
-        items: list[ModelIntentionDTO] = []
-        for row in rows:
-            items.append(
-                ModelIntentionDTO(
-                    text=row.text,
-                    video_title=row.video_title or "Unknown",
-                    source_id=row.id,
-                    source_type="comment",
-                )
-            )
-
-        # 3️⃣ ONE LLM CALL
-        service = IntentionExtractionService(model_config=consumer_cfg.model)
-        results = service.batch_extract_intentions(items)
-
-        
-        intention_dtos: list[IntentionDTO] = []
-        for dto, result in zip(items, results):
-           intention_dtos.append(IntentionDTO(
-                source_id=dto.source_id,
-                source_type=dto.source_type,
-                raw_text=dto.text,
-                intention_type=result["intention_type"],
-            ))
-        dao.save_batch(intention_dtos)
         
     # Check for run-once mode
     run_once = "--run-once" in sys.argv

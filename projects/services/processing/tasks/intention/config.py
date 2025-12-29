@@ -25,10 +25,10 @@ class KafkaConfig():
         """Load Kafka config from environment variables."""
         return cls(
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
-            topic=os.getenv("KAFKA_TOPIC", "youtube-comments"),
+            topic=os.getenv("KAFKA_TOPIC", "youtube.comments"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "intetion_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "intention-extraction-group"),
-            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "100")),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "10")),
             processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
@@ -66,6 +66,7 @@ class ModelConfig:
     openai_api_key:str
     model_name: str
     batch_size: int
+    max_tokens: int 
     
     @classmethod
     def from_env(cls) -> "ModelConfig":
@@ -73,7 +74,8 @@ class ModelConfig:
         return cls(
             openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
-            batch_size=int(os.getenv("BATCH_SIZE", "100"))
+            batch_size=int(os.getenv("BATCH_SIZE", 10)),
+            max_tokens=int(os.getenv("MAX_TOKENS", 1024))
         )
 
 

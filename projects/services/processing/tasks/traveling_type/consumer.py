@@ -8,8 +8,6 @@ from datetime import datetime
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
-from .langchain.langchain import TravelingTypeExtractionService
-from .dto import ModelTravelingTypeDTO 
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,9 +17,11 @@ logger = logging.getLogger(__name__)
 sys.path.append(os.getcwd())
 
 try:
+    from  projects.services.processing.tasks.traveling_type.langchain.langchain import TravelingTypeExtractionService
     from  projects.services.processing.tasks.traveling_type.config import ConsumerConfig
     from  projects.services.processing.tasks.traveling_type.dao import TravelingTypeDAO
-    from  projects.services.processing.tasks.traveling_type.dto import TravelingTypeDTO
+    from  projects.services.processing.tasks.traveling_type.models import TravelingType
+    from  projects.services.processing.tasks.traveling_type.dto import TravelingTypeDTO, ModelTravelingTypeDTO 
 except ImportError as e:
     print(f"Error importing project modules: {e}")
     print("Make sure to run with --py-files projects.zip")
@@ -31,20 +31,33 @@ except ImportError as e:
 # Although Spark has native checks, this ensures our Python parsing logic matches
 
 
-def get_db_config_dict():
-    """Helper to get config as dict to pass to workers."""
-    try:
-        cfg = ConsumerConfig.database
-        return {
-            "user": cfg.user,
-            "password": cfg.password,
-            "host": cfg.host,
-            "port": cfg.port,
-            "database": cfg.database
-        }
-    except Exception:
-        # Fallback or fail
-        return {}
+
+payload_schema = StructType([
+    StructField("source", StringType()),
+    StructField("externalId", StringType()),
+    StructField("rawText", StringType()),
+    StructField("createdAt", StringType()),
+    StructField("entityType", StringType()),
+    StructField(
+        "rawPayload",
+        StructType([
+            StructField("text", StringType()),
+            StructField("video_id", StringType()),
+        ])
+    )
+])
+
+def normalize_traveling_type(value) -> TravelingType:
+    if isinstance(value, TravelingType):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return TravelingType(value)
+        except ValueError:
+            return TravelingType.OTHER
+
+    return TravelingType.OTHER
 
             
 def ensure_topics_exist(kafka_cfg):
@@ -72,11 +85,61 @@ def ensure_topics_exist(kafka_cfg):
         except:
             pass
 
-
+# Process Batch Logic
+def process_batch(batch_df, batch_id):
+    if batch_df.isEmpty():
+        print(f"[Batch {batch_id}] Empty batch, skipping")
+        return
+    print(f"[Batch {batch_id}] Processing batch")
+    
+    # Load consumer config for DB connection
+    consumer_cfg = ConsumerConfig.from_env()
+    dao = TravelingTypeDAO(consumer_cfg.database)
+    # 1️⃣ Collect batch rows (small batches only!)
+    rows = batch_df.collect()
+    print(f"[Batch {batch_id}] Collected {len(rows)} rows")
+    # 2️⃣ Convert rows → DTOs
+    items: list[ModelTravelingTypeDTO] = []
+    for row in rows:
+        items.append(
+            ModelTravelingTypeDTO(
+                text=row.text,
+                source_id=row.source_id,
+                source_type=row.source_type,
+            )
+        )
+    if items:
+        print(
+            f"[Batch {batch_id}] First sample text (truncated): "
+            f"{items[0].text[:200]}"
+        )
+    # 3️⃣ ONE LLM CALL
+    service = TravelingTypeExtractionService(model_config=consumer_cfg.model)
+    results = service.batch_extract_traveling_types(items)
+    
+    traveling_type_dtos: list[TravelingTypeDTO] = []
+    for dto, result in zip(items, results):
+       traveling_type_dtos.append(TravelingTypeDTO(
+            source_id=dto.source_id,
+            source_type=dto.source_type,
+            raw_text=dto.text,
+            traveling_type=normalize_traveling_type(result.get("traveling_type")),
+        ))
+    try:
+        dao.save_batch(traveling_type_dtos)
+        print(
+            f"[Batch {batch_id}] Saved {len(traveling_type_dtos)} traveling types"
+        )
+    except Exception as e:
+        print(
+            f"[Batch {batch_id}] Failed while saving traveling types: {e}"
+        )
+    
             
 def run_spark_consumer():
     spark = SparkSession.builder \
-        .appName("TravelingTypeExtraction") \
+        .appName("TravelingTypeExtractionConsumer") \
+        .config("spark.sql.streaming.checkpointLocation", "/tmp/spark-checkpoints/traveling-type-extraction") \
         .getOrCreate()
         
     spark.sparkContext.setLogLevel("WARN")
@@ -111,59 +174,24 @@ def run_spark_consumer():
     # We will use the UDF just to demonstrate usage on a computed column if needed, 
     # but for structured streaming, native ops are preferred.
     
-    processed_df = df.select(
-        col("topic"),
-        col("value").cast("string").alias("payload_json")
+    processed_df = (
+    df
+    .select(from_json(col("value").cast("string"), payload_schema).alias("data"))
+    .select(
+        col("data.rawText").alias("text"),
+        col("data.externalId").alias("source_id"),
+        col("data.entityType").alias("source_type"),
+    )
     )
     
-    # Write Stream
+    
+     # Write Stream
     writer = processed_df \
         .writeStream \
         .outputMode("append") \
         .foreachBatch(process_batch) \
         .option("checkpointLocation", "/tmp/spark_checkpoint_traveling_type_extraction") \
         .trigger(processingTime=consumer_cfg.kafka.processing_time)
-
-
-    # Process Batch Logic
-    def process_batch(batch_df, batch_id):
-        if batch_df.isEmpty():
-            logger.info(f"Batch {batch_id}: No messages to process, skipping...")
-            return
-
-        logger.info(f"Processing batch {batch_id}")
-        
-        dao = TravelingTypeDAO(consumer_cfg.database)
-
-        # 1️⃣ Collect batch rows (small batches only!)
-        rows = batch_df.collect()
-
-        # 2️⃣ Convert rows → DTOs
-        items: list[ModelTravelingTypeDTO] = []
-        for row in rows:
-            items.append(
-                ModelTravelingTypeDTO(
-                    text=row.text,
-                    video_title=row.video_title or "Unknown",
-                    source_id=row.id,
-                    source_type="comment",
-                )
-            )
-
-        # 3️⃣ ONE LLM CALL
-        service = TravelingTypeExtractionService(model_config=consumer_cfg.model)
-        results = service.batch_extract_traveling_types(items)
-
-        
-        traveling_type_dtos: list[TravelingTypeDTO] = []
-        for dto, result in zip(items, results):
-           traveling_type_dtos.append(TravelingTypeDTO(
-                source_id=dto.source_id,
-                source_type=dto.source_type,
-                raw_text=dto.text,
-                traveling_type=result["traveling_type"],
-            ))
-        dao.save_batch(traveling_type_dtos)
         
     # Check for run-once mode
     run_once = "--run-once" in sys.argv

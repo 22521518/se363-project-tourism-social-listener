@@ -11,7 +11,7 @@ from ..dto import ModelIntentionDTO
 
 from .prompts import BATCH_PROMPT
 from .schemas import BatchIntentionResult
-
+from ..config import ModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 class IntentionExtractionService:
     """Service for extracting intentions from text using LangChain."""
     
-    def __init__(self):
+    def __init__(self, model_config: ModelConfig):
         self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model=model_config.model_name,
             temperature=0,
+            max_tokens=model_config.max_tokens,
+            api_key=model_config.openai_api_key  # Pass API key from config
         ).with_structured_output(BatchIntentionResult)
-
         self.chain = BATCH_PROMPT | self.llm
 
     def batch_extract_intentions(
