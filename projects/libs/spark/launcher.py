@@ -72,10 +72,13 @@ def launch_spark_job(
         raise FileNotFoundError(f"Virtual environment not found at {venv_dir}")
 
     # Determine python executable in venv for Spark
+    # Driver uses absolute path (runs locally), executors use relative path (from unpacked archive)
     if os.path.exists(os.path.join(venv_dir, "Scripts")):
-        venv_python_rel = "Scripts/python.exe" # Windows
+        venv_python_rel = "Scripts/python.exe" # Windows (for executors)
+        driver_python_abs = os.path.join(venv_dir, "Scripts", "python.exe")
     elif os.path.exists(os.path.join(venv_dir, "bin")):
-        venv_python_rel = "bin/python" # Linux/Unix
+        venv_python_rel = "bin/python" # Linux/Unix (for executors)
+        driver_python_abs = os.path.join(venv_dir, "bin", "python")
     else:
         raise FileNotFoundError("Could not detect Scripts or bin in .venv")
 
@@ -99,7 +102,7 @@ def launch_spark_job(
             "--py-files", code_zip,
             # Config Spark to use python from the unzipped archive
             "--conf", f"spark.pyspark.python=./venv/{venv_python_rel}",
-            "--conf", f"spark.pyspark.driver.python=./venv/{venv_python_rel}",
+            "--conf", f"spark.pyspark.driver.python={driver_python_abs}",
             consumer_script_path
         ] + args
 
