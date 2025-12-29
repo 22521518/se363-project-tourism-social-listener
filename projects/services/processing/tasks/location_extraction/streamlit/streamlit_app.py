@@ -294,7 +294,7 @@ def render_review_tab():
     with col2:
         status_filter = st.selectbox("Status", ["pending", "approved", "all"], index=0, key="review_status_filter")
     with col3:
-        if st.button("🔄 Refresh", key="review_refresh", width='stretch'):
+        if st.button("🔄 Refresh", key="review_refresh", use_container_width=True):
             clear_caches()
             st.rerun()
     
@@ -469,7 +469,7 @@ def render_review_tab():
             ac1, ac2 = st.columns(2)
             with ac1:
                 btn_label = "✅ Update Approval" if row['is_approved'] else "✅ Approve"
-                if st.button(btn_label, key=f"approve_btn_{record_id}", width='stretch', type="primary"):
+                if st.button(btn_label, key=f"approve_btn_{record_id}", use_container_width=True, type="primary"):
                     # Prepare final result for saving
                     final_locs = []
                     for loc in edit_data["locations"]:
@@ -500,7 +500,7 @@ def render_review_tab():
                         st.error("Failed to save.")
             
             with ac2:
-                if st.button("🗑️ Delete Record", key=f"del_rec_btn_{record_id}", width='stretch', type="secondary"):
+                if st.button("🗑️ Delete Record", key=f"del_rec_btn_{record_id}", use_container_width=True, type="secondary"):
                     dao = get_dao()
                     if dao.soft_delete(record_id):
                         st.success("Deleted!")
@@ -536,7 +536,7 @@ def render_kafka_tab():
     with st.form("single_message_form"):
         text_content = st.text_area("Text Content", placeholder="Enter the text to extract locations from...", height=100)
         
-        submit = st.form_submit_button("📤 Send to Kafka", width='stretch')
+        submit = st.form_submit_button("📤 Send to Kafka", use_container_width=True)
         
         if submit:
             if not text_content:
@@ -719,7 +719,7 @@ with st.sidebar:
         except Exception as e:
             st.error(f"❌ DB Error: {e}")
 
-    if st.button("Clear Cache & Refresh", width='stretch'):
+    if st.button("Clear Cache & Refresh", use_container_width=True):
         clear_caches()
         # Also clear session state edit states
         for key in list(st.session_state.keys()):
