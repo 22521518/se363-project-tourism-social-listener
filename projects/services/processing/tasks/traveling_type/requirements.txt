@@ -1,0 +1,29 @@
+# Core LangChain
+langchain
+langchain-core
+langchain-community
+langchain-openai
+
+# PySpark
+pyspark
+
+# Database
+sqlalchemy
+
+# Message Queue - Kafka
+kafka-python-ng
+
+# Utilities
+python-dotenv
+
+# Optional: For GPU acceleration (if you have NVIDIA GPU)
+accelerate
+
+# Optional: For model quantization (smaller memory footprint)
+# bitsandbytes==0.45.0
+
+# Optional: For PostgreSQL
+# psycopg2-binary==2.9.10
+
+# Optional: For MySQL
+# pymysql==1.1.1

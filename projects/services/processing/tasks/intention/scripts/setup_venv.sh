@@ -7,7 +7,7 @@ set -euo pipefail
 # Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE_ROOT="$(dirname "${SCRIPT_DIR}")"
-REQ_FILE="${SERVICE_ROOT}/requirements.youtube.txt"
+REQ_FILE="${SERVICE_ROOT}/requirements.txt"
 
 VENV_DIR="${1:-}"
 

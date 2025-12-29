@@ -12,17 +12,17 @@ from ..dto import ModelTravelingTypeDTO
 from .prompts import BATCH_PROMPT
 from .schemas import BatchTravelingTypeResult
 
-
 logger = logging.getLogger(__name__)
 
 
 class TravelingTypeExtractionService:
     """Service for extracting traveling type from text using LangChain."""
     
-    def __init__(self):
+    def __init__(self, model_config: ModelConfig):
         self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model=model_config.model_name,
             temperature=0,
+            api_key=model_config.openai_api_key  # Pass API key from config
         ).with_structured_output(BatchTravelingTypeResult)
 
         self.chain = BATCH_PROMPT | self.llm

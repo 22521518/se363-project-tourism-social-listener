@@ -9,6 +9,8 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
 import logging
 
+logger = logging.getLogger(__name__)
+
 from .models import Base, IntentionModel,IntentionType
 from .dto import (
     IntentionDTO, 
