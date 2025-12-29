@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   youtube-monitor:
     build:
@@ -25,6 +24,9 @@ services:
       - PYTHONPATH=/opt/airflow
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
-    depends_on:
-      postgres:
-        condition: service_healthy
+    networks:
+      - airflow_default
+
+networks:
+  airflow_default:
+    external: true
