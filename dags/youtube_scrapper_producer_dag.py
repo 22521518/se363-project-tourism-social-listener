@@ -49,7 +49,12 @@ with DAG(
     run_producer = BashOperator(
         task_id='run_producer',
         bash_command=f"bash {PRODUCER_SCRIPT} --mode smart", # --run-once"
-        env={**os.environ, "VENV_DIR": VENV_PATH},
+        env={
+            **os.environ, 
+            "VENV_DIR": VENV_PATH,
+            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
+            "DB_HOST": "postgres"
+        },
     )
 
     # Execution Flow

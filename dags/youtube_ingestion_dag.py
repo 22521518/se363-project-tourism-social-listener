@@ -49,7 +49,12 @@ with DAG(
     run_consumer = BashOperator(
         task_id='run_consumer',
         bash_command=f"bash {CONSUMER_SCRIPT} ", # --run-once",
-        env={**os.environ, "VENV_DIR": VENV_PATH},
+        env={
+            **os.environ, 
+            "VENV_DIR": VENV_PATH,
+            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
+            "DB_HOST": "postgres"
+        },
     )
 
     # Execution Flow
