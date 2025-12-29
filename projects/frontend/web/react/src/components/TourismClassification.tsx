@@ -1,11 +1,15 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Compass } from 'lucide-react';
+import { Compass, Loader2 } from 'lucide-react';
+import { useGeographyData } from '../hooks/useGeographyData';
 
 interface TourismClassificationProps {
   filters: any;
 }
 
 export function TourismClassification({ filters }: TourismClassificationProps) {
+  // Fetch geography data from API
+  const { data: geoData, loading: geoLoading, error: geoError } = useGeographyData();
+
   const purposeData = [
     { name: 'Leisure/Vacation', value: 4200, color: '#3b82f6' },
     { name: 'Adventure', value: 2800, color: '#10b981' },
@@ -21,13 +25,6 @@ export function TourismClassification({ filters }: TourismClassificationProps) {
     { name: 'Couple', value: 2800, color: '#ec4899' },
     { name: 'Package Tour', value: 2400, color: '#f59e0b' },
     { name: 'Group', value: 1900, color: '#10b981' }
-  ];
-
-  const geoData = [
-    { name: 'Domestic', value: 5200, color: '#3b82f6' },
-    { name: 'International', value: 4800, color: '#10b981' },
-    { name: 'Regional', value: 3100, color: '#f59e0b' },
-    { name: 'Long-Haul', value: 1600, color: '#8b5cf6' }
   ];
 
   return (
@@ -98,25 +95,44 @@ export function TourismClassification({ filters }: TourismClassificationProps) {
 
         {/* By Geography */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm text-gray-700 mb-2">By Geography</h3>
-          <div className="space-y-2">
-            {geoData.map((item) => (
-              <div key={item.name} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">{item.name}</span>
-                  <span className="text-gray-600">{item.value}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      width: `${(item.value / Math.max(...geoData.map(d => d.value))) * 100}%`,
-                      backgroundColor: item.color
-                    }}
-                  />
-                </div>
+          <h3 className="text-sm text-gray-700 mb-1">By Geography</h3>
+          <p className="text-xs text-gray-500 mb-3">Origin: Vietnam</p>
+          <div className="space-y-3">
+            {geoLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <span className="ml-2 text-sm text-gray-500">Loading...</span>
               </div>
-            ))}
+            ) : geoError ? (
+              <div className="text-sm text-red-500 py-2">{geoError}</div>
+            ) : geoData.length === 0 ? (
+              <div className="text-sm text-gray-500 py-2">No geography data available</div>
+            ) : (
+              geoData.map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 font-medium">{item.name}</span>
+                      <span className="text-xs text-gray-400">
+                        {item.name === 'Domestic' && '(Vietnam)'}
+                        {item.name === 'Regional' && '(South East Asia)'}
+                        {item.name === 'International' && '(World)'}
+                      </span>
+                    </div>
+                    <span className="text-gray-600 font-semibold">{item.value.toLocaleString()}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${(item.value / Math.max(...geoData.map(d => d.value), 1)) * 100}%`,
+                        backgroundColor: item.color
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
