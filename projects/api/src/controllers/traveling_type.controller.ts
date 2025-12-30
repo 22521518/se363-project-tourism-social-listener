@@ -1,33 +1,35 @@
-import { Router, Request, Response } from "express";
-import { intentionService } from "../services/intention.service";
+import { Router, Request, Response } from 'express';
+import { travelingTypeService } from '../services/traveling_type.service';
 
-export const intentionRouter = Router();
+export const travelingTypeRouter = Router();
 
 /**
  * @openapi
- * /api/intentions/stats:
+ * /api/traveling_types/stats:
  *   get:
- *     summary: Get intention statistics
+ *     summary: Get traveling type statistics
  *     description: |
- *       Returns aggregated intention counts categorized by type:
- *      - **Question**: User questions
- *      - **Feedback**: User feedback
- *      - **Complaint**: User complaints
- *      - **Suggestion**: User suggestions
- *      - **Praise**: User praises
- *      - **Request**: User requests
- *      - **Discussion**: User discussions
- *      - **Spam**: Spam content
- *      - **Other**: Other types of intentions
+ *       Returns aggregated traveling type counts categorized by type:
+ *       - **Business**: Business travel
+ *       - **Leisure**: Leisure travel
+ *       - **Adventure**: Adventure travel
+ *       - **Backpacking**: Backpacking travel
+ *       - **Luxury**: Luxury travel
+ *       - **Budget**: Budget travel
+ *       - **Solo**: Solo travel
+ *       - **Group**: Group travel
+ *       - **Family**: Family travel
+ *       - **Romantic**: Romantic travel
+ *       - **Other**: Other types of travel
  *     tags:
- *       - Intention
+ *       - Locations
  *     responses:
  *       200:
- *         description: Successfully retrieved intention statistics
+ *         description: Successfully retrieved traveling type statistics
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/IntentionStatsResponse'
+ *               $ref: '#/components/schemas/TravelingTypeStatsResponse'
  *             example:
  *               success: true
  *               data:
@@ -71,14 +73,12 @@ export const intentionRouter = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-intentionRouter.get("/stats", async (_req: Request, res: Response) => {
+travelingTypeRouter.get('/stats', async (_req: Request, res: Response) => {
   try {
-    const stats = await intentionService.getIntentionStats();
+    const stats = await travelingTypeService.getTravelingTypeStats();
     res.json({ success: true, data: stats });
   } catch (error) {
-    console.error("Error fetching intention stats:", error);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to fetch intention stats" });
+    console.error('Error fetching traveling type stats:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch traveling type stats' });
   }
 });
