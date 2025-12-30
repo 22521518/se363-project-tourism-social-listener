@@ -10,8 +10,9 @@ import { ItineraryTracker } from './components/ItineraryTracker';
 
 export default function App() {
   const [filters, setFilters] = useState({
-    tourismPurpose: 'all',
-    tourismOrg: 'all',
+    tourismType: 'all',
+    // tourismOrg: 'all',
+    postIntention: 'all',
     tourismGeo: 'all',
     postType: 'all',
     timeRange: '7d',
