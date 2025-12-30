@@ -126,10 +126,9 @@ def process_batch_and_write_to_db(batch_df, batch_id):
     
     logger.info(f"Batch {batch_id}: Processing {batch_df.count()} rows")
     
-    # Initialize DAO
+    # Initialize DAO (auto-initializes tables if not exist)
     db_config = DatabaseConfig.from_env()
     dao = LocationExtractionDAO(db_config)
-    dao.init_db()
     
     # Try to load LLM pipeline
     pipeline = None

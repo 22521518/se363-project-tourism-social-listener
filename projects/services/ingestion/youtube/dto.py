@@ -147,3 +147,84 @@ class TrackedChannelDTO:
             "last_video_published": self.last_video_published.isoformat() if self.last_video_published else None,
             "is_active": self.is_active,
         }
+
+
+@dataclass
+class IngestionCheckpointDTO:
+    """
+    Data Transfer Object for ingestion checkpoint/progress tracking.
+    
+    Used to resume fetching after rate limits or failures.
+    """
+    id: Optional[int]
+    channel_id: str
+    operation_type: str  # "fetch_videos", "fetch_comments", "full_ingestion"
+    
+    # Pagination state
+    next_page_token: Optional[str] = None
+    last_video_id: Optional[str] = None  # For comment fetching
+    
+    # Progress
+    fetched_count: int = 0
+    target_count: Optional[int] = None
+    
+    # Status
+    status: str = "in_progress"  # in_progress, completed, rate_limited, failed
+    error_message: Optional[str] = None
+    error_code: Optional[int] = None
+    
+    # Rate limit info
+    rate_limit_reset_at: Optional[datetime] = None
+    retry_count: int = 0
+    
+    # Timestamps
+    started_at: Optional[datetime] = None
+    last_updated: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "id": self.id,
+            "channel_id": self.channel_id,
+            "operation_type": self.operation_type,
+            "next_page_token": self.next_page_token,
+            "last_video_id": self.last_video_id,
+            "fetched_count": self.fetched_count,
+            "target_count": self.target_count,
+            "status": self.status,
+            "error_message": self.error_message,
+            "error_code": self.error_code,
+            "rate_limit_reset_at": self.rate_limit_reset_at.isoformat() if self.rate_limit_reset_at else None,
+            "retry_count": self.retry_count,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "last_updated": self.last_updated.isoformat() if self.last_updated else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+        }
+
+
+class RateLimitError(Exception):
+    """
+    Custom exception for YouTube API rate limit errors.
+    
+    Contains checkpoint info so the caller can save progress and retry later.
+    """
+    def __init__(
+        self, 
+        message: str, 
+        error_code: int = 429,
+        checkpoint: Optional[IngestionCheckpointDTO] = None,
+        retry_after: Optional[int] = None,  # Seconds until rate limit resets
+    ):
+        super().__init__(message)
+        self.error_code = error_code
+        self.checkpoint = checkpoint
+        self.retry_after = retry_after
+    
+    def __str__(self):
+        base = f"RateLimitError({self.error_code}): {super().__str__()}"
+        if self.retry_after:
+            base += f" (retry after {self.retry_after}s)"
+        if self.checkpoint:
+            base += f" [checkpoint: {self.checkpoint.fetched_count} items fetched]"
+        return base

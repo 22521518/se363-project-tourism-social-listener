@@ -23,10 +23,31 @@ class LocationExtractionDAO:
     Data Access Object for Location Extraction entities.
     """
    
-    def __init__(self, config: DatabaseConfig):
-        """Initialize DAO with database configuration."""
+    def __init__(self, config: DatabaseConfig, auto_init: bool = True):
+        """
+        Initialize DAO with database configuration.
+        
+        Args:
+            config: Database configuration
+            auto_init: If True, automatically create tables if they don't exist
+        """
         self.engine = create_engine(config.connection_string)
         self.SessionLocal = sessionmaker(bind=self.engine)
+        
+        if auto_init:
+            self._ensure_tables_exist()
+    
+    def _ensure_tables_exist(self) -> None:
+        """
+        Check if required tables exist and create them if they don't.
+        Uses SQLAlchemy's create_all which is idempotent (safe to call multiple times).
+        """
+        try:
+            # create_all only creates tables that don't exist
+            Base.metadata.create_all(self.engine, checkfirst=True)
+            logger.info("Database tables ensured (created if not exist)")
+        except Exception as e:
+            logger.warning(f"Could not auto-init database tables: {e}")
     
     @contextmanager
     def get_session(self):
@@ -42,7 +63,7 @@ class LocationExtractionDAO:
             session.close()
             
     def init_db(self) -> None:
-        """Initialize database tables."""
+        """Initialize database tables (explicit call)."""
         Base.metadata.create_all(self.engine)
 
     # ==================== CREATE OPERATIONS ====================

@@ -85,8 +85,8 @@ class LocationExtractionConsumer:
         logger.info(f"DB Host: {self.db_config.host}")
         logger.info(f"===================")
         
+        # DAO auto-initializes tables (auto_init=True by default)
         self.dao = LocationExtractionDAO(self.db_config)
-        self.dao.init_db()
         
         self.use_llm = use_llm and LLM_AVAILABLE
         self.pipeline = None

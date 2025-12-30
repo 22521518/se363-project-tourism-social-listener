@@ -1,0 +1,20 @@
+{
+  "request_id": "8b1af583-2193-4762-b992-b9fd1ea277ad",
+  "url": "https://en.wikivoyage.org/wiki/Ho_Chi_Minh_City",
+  "content_type": "blog",
+  "meta": {
+    "crawl_time": "2025-12-30T02:07:52.140236",
+    "language": null,
+    "crawl_strategy": "single",
+    "extraction_strategy": "llm",
+    "detected_sections": []
+  },
+  "content": {
+    "title": null,
+    "information": null,
+    "reviews": [],
+    "comments": [],
+    "blog_sections": [],
+    "agency_info": null
+  }
+}

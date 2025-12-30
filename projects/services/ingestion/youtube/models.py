@@ -119,6 +119,45 @@ class TrackedChannelModel(Base):
         return f"<TrackedChannel(channel_id={self.channel_id}, active={self.is_active})>"
 
 
+class IngestionCheckpointModel(Base):
+    """
+    ORM model for tracking ingestion progress/checkpoints.
+    
+    Used to resume fetching after rate limits or failures.
+    Stores the last successful page token so we can continue from where we left off.
+    """
+    __tablename__ = "youtube_ingestion_checkpoints"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    channel_id = Column(String(50), ForeignKey("youtube_channels.id"), nullable=False)
+    operation_type = Column(String(50), nullable=False)  # "fetch_videos", "fetch_comments", "full_ingestion"
+    
+    # Pagination state
+    next_page_token = Column(String(255), nullable=True)  # YouTube pagination token
+    last_video_id = Column(String(50), nullable=True)  # For comment fetching - which video we're on
+    
+    # Progress tracking
+    fetched_count = Column(Integer, default=0)  # Items fetched so far
+    target_count = Column(Integer, nullable=True)  # Target items to fetch (if known)
+    
+    # Status
+    status = Column(String(20), default="in_progress")  # in_progress, completed, rate_limited, failed
+    error_message = Column(Text, nullable=True)
+    error_code = Column(Integer, nullable=True)  # HTTP error code if applicable
+    
+    # Rate limit info
+    rate_limit_reset_at = Column(DateTime, nullable=True)  # When rate limit resets (if known)
+    retry_count = Column(Integer, default=0)
+    
+    # Timestamps
+    started_at = Column(DateTime, default=datetime.now(UTC))
+    last_updated = Column(DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
+    completed_at = Column(DateTime, nullable=True)
+    
+    def __repr__(self) -> str:
+        return f"<IngestionCheckpoint(channel={self.channel_id}, op={self.operation_type}, status={self.status})>"
+
+
 def create_tables(connection_string: str) -> None:
     """Create all tables in the database."""
     engine = create_engine(connection_string)
