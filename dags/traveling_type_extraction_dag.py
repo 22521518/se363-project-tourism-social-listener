@@ -16,6 +16,24 @@ AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/setup_venv.sh")
 VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/.venv")
+INIT_DB_SCRIPT = os.path.join(
+    AIRFLOW_HOME,
+    "projects/services/processing/tasks/traveling_type/init_db.py"
+)
+
+# Shared environment variables for all tasks
+COMMON_ENV = {
+    **os.environ,
+    "VENV_DIR": VENV_PATH,
+    "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
+    "KAFKA_TOPIC": "youtube-comments",
+    "DB_HOST": "postgres",
+    "DB_PORT": "5432",
+    "DB_NAME": "your_db_name",  # Update this
+    "DB_USER": "your_db_user",  # Update this
+    "DB_PASSWORD": "your_db_password",  # Update this
+    "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),  # For LLM
+}
 
 default_args = {
     'owner': 'airflow',
@@ -30,7 +48,7 @@ with DAG(
     'traveling_type_extraction_dag',
     default_args=default_args,
     description='Run Traveling Type Extraction Consumer',
-    schedule_interval=timedelta(minutes=30),
+    schedule_interval=timedelta(minutes=60),
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['traveling_type', 'extraction'],
@@ -43,19 +61,20 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
 
+    # Task 1: Initialize Database Tables
+    init_database = BashOperator(
+        task_id='initialize_database',
+        bash_command=f"source {VENV_PATH}/bin/activate && python {INIT_DB_SCRIPT}",
+        env=COMMON_ENV,
+    )
     # Task 2: Spark Consumer
     # Consumes events from Kafka and saves to Database using Spark
     run_consumer = BashOperator(
         task_id='run_consumer',
         bash_command=f"bash {CONSUMER_SCRIPT} ", # --run-once",
-        env={
-            **os.environ, 
-            "VENV_DIR": VENV_PATH,
-            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
-            "DB_HOST": "postgres"
-        },
+        env=COMMON_ENV,
     )
 
     # Execution Flow
     # Setup -> Consumer
-    setup_env >> run_consumer
+    setup_env >> init_database >> run_consumer
