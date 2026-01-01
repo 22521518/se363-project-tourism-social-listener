@@ -13,12 +13,13 @@ import os
 # If running locally or in specific setup, using absolute path might be safer or ENV var.
 # We will use a dynamically resolved path assuming the standard 'airflow' directory structure.
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
-CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/run_spark_consumer.sh")
-SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/setup_venv.sh")
-VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/.venv")
+PRODUCER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/run_spark_producer.sh")
+CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/run_spark_consumer.sh")
+SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/setup_venv.sh")
+VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/.venv")
 INIT_DB_SCRIPT = os.path.join(
     AIRFLOW_HOME,
-    "projects/services/processing/tasks/intention/init_db.py"
+    "projects/services/processing/tasks/traveling_type/init_db.py"
 )
 
 # Shared environment variables for all tasks
@@ -45,13 +46,13 @@ default_args = {
 }
 
 with DAG(
-    'intention_extraction_dag',
+    'traveling_type_db_producer',
     default_args=default_args,
-    description='Run Intention Extraction Consumer',
+    description='Run unprocess traveling_type producer from DB to Kafka',
     schedule_interval=timedelta(minutes=60),
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=['intention', 'extraction'],
+    tags=['traveling_type', 'db','unprocessed', 'producer'],
 ) as dag:
 
     # Task 0: Setup Environment
@@ -68,14 +69,13 @@ with DAG(
         env=COMMON_ENV,
     )
 
-    # Task 2: Spark Consumer
-    # Consumes events from Kafka and saves to Database using Spark
-    run_consumer = BashOperator(
-        task_id='run_consumer',
-        bash_command=f"bash {CONSUMER_SCRIPT} ", # --run-once",
+    # Task 2: Produce Unprocessed Comments to Kafka
+    run_producer = BashOperator(
+        task_id='produce_to_kafka',
+        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 10000",
         env=COMMON_ENV,
     )
 
     # Execution Flow
-    # Setup -> Consumer
-    setup_env >> init_database >> run_consumer
+    # Setup -> [Producer]
+    setup_env >> init_database >> run_producer 

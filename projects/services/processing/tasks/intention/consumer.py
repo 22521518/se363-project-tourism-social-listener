@@ -71,7 +71,10 @@ def ensure_topics_exist(kafka_cfg):
         )
         
         topics = [
+            # Main topic for other modules
             NewTopic(name=kafka_cfg.topic, num_partitions=1, replication_factor=1),
+            # Unprocessed topic specifically for intention extraction
+            NewTopic(name=kafka_cfg.unprocessed_topic, num_partitions=1, replication_factor=1),
         ]
         
         admin.create_topics(topics)
@@ -165,7 +168,7 @@ def run_spark_consumer():
         return
 
     # Subscribe to all topics
-    topics = f"{consumer_cfg.kafka.topic}"
+    topics = f"{consumer_cfg.kafka.topic},{consumer_cfg.kafka.unprocessed_topic}"
     
     print(f"Subscribing to topics: {topics}")
     
@@ -192,7 +195,7 @@ def run_spark_consumer():
         col("data.externalId").alias("source_id"),
         col("data.entityType").alias("source_type"),
     )
-)
+    )
     
         
       # Write Stream

@@ -16,6 +16,7 @@ class KafkaConfig():
     bootstrap_servers: str
     client_id: str
     topic: str
+    unprocessed_topic: str = "intention.unprocessed"
     group_id: str
     max_offsets_per_trigger: int
     processing_time: str
@@ -26,6 +27,7 @@ class KafkaConfig():
         return cls(
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
             topic=os.getenv("KAFKA_TOPIC", "youtube.comments"),
+            unprocessed_topic=os.getenv("KAFKA_UNPROCESSED_TOPIC", "intention.unprocessed"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "intetion_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "intention-extraction-group"),
             max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "10")),
