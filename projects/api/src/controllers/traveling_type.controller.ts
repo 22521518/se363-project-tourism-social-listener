@@ -22,7 +22,7 @@ export const travelingTypeRouter = Router();
  *       - **Romantic**: Romantic travel
  *       - **Other**: Other types of travel
  *     tags:
- *       - Locations
+ *       - Traveling Types
  *     responses:
  *       200:
  *         description: Successfully retrieved traveling type statistics

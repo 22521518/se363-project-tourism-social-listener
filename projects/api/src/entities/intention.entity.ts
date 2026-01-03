@@ -1,13 +1,26 @@
 export type IntentionType =
-  | "question"
-  | "feedback"
-  | "complaint"
-  | "suggestion"
-  | "praise"
-  | "request"
-  | "discussion"
-  | "spam"
-  | "other";
+  | "QUESTION"
+  | "FEEDBACK" 
+  | "COMPLAINT"
+  | "SUGGESTION"
+  | "PRAISE"
+  | "REQUEST"
+  | "DISCUSSION"
+  | "SPAM"
+  | "OTHER";
+
+// CATEGORY_COLORS
+export const CATEGORY_COLORS: Record<IntentionType, string> = {
+  QUESTION: "#3b82f6",
+  FEEDBACK: "#10b981",
+  COMPLAINT: "#f59e0b",
+  SUGGESTION: "#8b5cf6",
+  PRAISE: "#ec4899",
+  REQUEST: "#06b6d4",
+  DISCUSSION: "#f97316",
+  SPAM: "#ef4444",
+  OTHER: "#6b7280",
+};
 
 export interface IntentionExtraction {
   id: string;
