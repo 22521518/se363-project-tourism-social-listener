@@ -23,5 +23,6 @@ export async function fetchApi<T>(endpoint: string): Promise<T> {
     throw new Error(json.error || 'Unknown API error');
   }
 
+  console.log(endpoint," API response data:", json.data);
   return json.data;
 }

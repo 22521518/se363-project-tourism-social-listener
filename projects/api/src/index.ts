@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { locationRouter } from './controllers/location.controller';
 import { swaggerSpec } from './config/swagger';
+import { intentionRouter } from './controllers/intention.controller';
+import { travelingTypeRouter } from './controllers/traveling_type.controller';
 
 dotenv.config();
 
@@ -19,6 +21,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/api/locations', locationRouter);
+app.use('/api/intentions', intentionRouter);
+app.use('/api/traveling_types', travelingTypeRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
