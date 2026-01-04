@@ -6,14 +6,15 @@ Listens on webcrawl.requests topic and triggers crawl operations.
 import json
 import logging
 import asyncio
+import sys
+import os
 from datetime import datetime
 from typing import Optional, Callable
 
 from kafka import KafkaConsumer as KafkaConsumerClient
 from kafka.errors import NoBrokersAvailable
 
-import sys
-import os
+# Add parent directory to path for config import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import KafkaConfig

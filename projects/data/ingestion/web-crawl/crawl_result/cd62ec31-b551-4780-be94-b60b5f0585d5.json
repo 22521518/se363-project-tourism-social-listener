@@ -1,0 +1,151 @@
+{
+  "title": "Khách sạn Thành phố Hồ Chí Minh",
+  "information": "Sài Gòn, hay còn gọi là Thành phố Hồ Chí Minh, là thành phố mang trong mình tên của vị lãnh tụ đáng kính của dân tộc Việt Nam. Từng được mệnh danh là \"Hòn ngọc Viễn Đông\", Sài Gòn mang trong mình nét đẹp hào nhoáng của những tòa cao ốc hiện đại, đan xen với những công trình cổ kính nhuốm màu thời gian. Chắc hẳn bạn đã nghe qua con đường Đồng Khởi rợp bóng cây xanh, nhà thờ Đức Bà hàng trăm tuổi, bến Bạch Đằng lộng gió hay khu phố Tây Bùi Viện rực rỡ ánh đèn – tất cả tạo nên một bức tranh Sài Gòn đầy sống động, rực rỡ và là chốn phồn hoa trong mắt biết bao thi sĩ Việt Nam. Nhưng Sài Gòn không chỉ có kiến trúc hay cảnh sắc, mà còn là nơi hội tụ những nhịp sống vội vã nhưng hào sảng, nơi những gánh hàng rong bán hủ tiếu nghi ngút khói tồn tại song hành cùng những nhà hàng sang trọng, nơi con người từ khắp mọi miền đất nước và cả thế giới đến đây lập nghiệp, tạo nên một bản giao hưởng đa sắc, đa thanh. Dù bạn đến đây lần đầu hay đã quen thuộc với từng con hẻm nhỏ, Sài Gòn vẫn luôn có điều gì đó mới mẻ để khám phá – chắc chắn sẽ khiến cho mọi vị khách xiêu lòng khi đặt chân đến đây.",
+  "reviews": [
+    {
+      "author": "j.",
+      "text": "Rât tốt, gần sân bay, nhân viên thân thiện, hỗ trợ nhiệt tình. Giá cả phải chăng",
+      "rating": 8.1
+    },
+    {
+      "author": "Parnella C.",
+      "text": "Khách sạn này sạch sẽ, tiện nghi và có giá trị tuyệt vời so với số tiền bỏ ra. Phòng ốc rộng rãi so với giá cả, và mọi thứ đều được bảo trì tốt. Đây là một lựa chọn tuyệt vời nếu bạn đang tìm kiếm một nơi nghỉ ngơi đơn giản, giá cả phải chăng và đáng tin cậy gần sân bay.",
+      "rating": 8.5
+    },
+    {
+      "author": "Te Van Thanh",
+      "text": "Lần trước tự liên hệ thì được ở phòng mới, đẹp, lần này đặt qua traveloka lại được sắp xếp vào 1 phòng dành cho lưu trú dài ngày nên phòng không mới, bàn nước ố, nhiều vết dơ. Ngoài ra thì khuôn viên và sảnh đón được bài trí rất đẹp, nhân viên dễ thương.",
+      "rating": 7.8
+    },
+    {
+      "author": "Thi Phuong Thao Tran",
+      "text": "gần sân bay, phòng sạch sẽ, nhưng máy lạnh ồn quá, phải chỉnh lại mới đỡ ồn. phòng không cách âm nên cũng ồn. ngủ tạm để sáng ra sân bay sớm thì ổn. giá rẻ.",
+      "rating": 8.1
+    },
+    {
+      "author": "Tran T. C. H.",
+      "text": "Dịch vụ tuyệt vời, phòng sạch sẽ, nhân viên rất thân thiện. Rất đáng để trải nghiệm!",
+      "rating": 8.8
+    },
+    {
+      "author": "Ngoc Q. N.",
+      "text": "Phòng nghỉ sạch sẽ, có dọn phòng thường xuyên nên siêu vệ sinh. Nhân viên siêu nice, cả các bạn lễ tân và các bạn làm spa bên dưới lun í. À có 1 thứ mình rcm cả nhà nên thử đi book phòng tại đây, đó là gội đầu ở spa bên dưới, siêu phê lun. Ncl level sg mang lại cho mình trải nghiệm 100 điểm khum có nhưng nhé.",
+      "rating": 9.1
+    },
+    {
+      "author": "H***G",
+      "text": "Phòng sạch sẽ, nhân viên thân thiện, có hỗ trợ nhận phòng sớm",
+      "rating": 7.6
+    },
+    {
+      "author": "Nicholas F.",
+      "text": "Phòng sạch sẽ, nhân viên thân thiện, phòng tắm tuyệt vời, bữa sáng tuyệt vời, rất đáng để giới thiệu.",
+      "rating": 8.5
+    },
+    {
+      "author": "THANH NHAN NGUYEN",
+      "text": "Phòng rộng rãi và sạch sẽ.Sẽ quay lại khi có dịp công tác tại đây.",
+      "rating": 8.2
+    },
+    {
+      "author": "Y***C",
+      "text": "Vị trí của khách sạn rất chiến lược, vì nằm ở Quận 1, gần Chợ Bến Thành, Saigon Square, Saigon Center",
+      "rating": 8.2
+    },
+    {
+      "author": "n***n",
+      "text": "Phòng nghỉ được bài trí tinh tế, sạch sẽ và đầy đủ tiện nghi, mang đến cảm giác như ở nhà.",
+      "rating": 8.3
+    },
+    {
+      "author": "A***a",
+      "text": "Rất vui, nhân viên khá thân thiện và nhanh nhẹn. Vị trí rất tốt. Đáng ngạc nhiên là phòng khá rộng và thoải mái. Có vẻ như mới được cải tạo nên phòng và phòng tắm trông mới mẻ và sạch sẽ. Có cả TV thông minh nữa.",
+      "rating": 8.7
+    },
+    {
+      "author": "J***n",
+      "text": "Tất cả đều tuyệt vời. Nhân viên thân thiện, phòng sạch sẽ, rộng rãi, đầy đủ tiện nghi, và hỗ trợ rất nhiệt tình. Phí out trễ cũng rất rẻ.",
+      "rating": 8.5
+    },
+    {
+      "author": "Thu Huyen",
+      "text": "Vì cơ sở này gần sân bay hơn nên giá rẻ hơn mường thanh quận khác. Lần đầu tới Sài Gòn nên mình đặt ở đây cho yên tâm đặt chỗ khác sợ chất lượng không như quảng cáo. Để tới quận 1 đi cũng có chút xíu. Nhân viên nhẹ nhàng nhiệt tình, 10 điểm luôn",
+      "rating": 8.5
+    },
+    {
+      "author": "T***g",
+      "text": "Eastin Grand Hotel Saigon chất lượng phục vụ tốt, phòng nội thất sạch sẻ, không gian thoáng mát,nhân viên nhiệt tình, món ăn phù hợp khẩu vị.",
+      "rating": 8.8
+    },
+    {
+      "author": "T***n",
+      "text": "Mình thấy đánh giá tốt nên mình đến ở thử và mình rất ưng ý khách sạn ở đây nên mình đã quay trở lại 1 lần nữa. Phòng đẹp, như ảnh. Ksan ở vị trí thuận tiện đi đâu cũng nhanh. Mấy bạn lễ tân rất dễ thương, và anh bảo vệ cũng rất nhiệt tình. 10 điểm cho ksan này và sẽ là ksan mình chọn khi đến đây",
+      "rating": 9.1
+    },
+    {
+      "author": "ngo phi phuong",
+      "text": "khách sạn giá cả hợp lý, phục vụ thân thiện, địa điểm tuyệt vời để đi du lịch, mình sẽ quay lại nếu có dịp",
+      "rating": 8.4
+    },
+    {
+      "author": "A***g",
+      "text": "Khách sạn rất gần trung tâm mua sắm. Chỉ cần đi bộ và băng qua trung tâm mua sắm. Mọi nơi đều rất gần, chỉ cần đi bộ. Dịch vụ này rất tốt. Bữa sáng đối với tôi là người Hồi giáo cũng tốt. Mọi món ăn có thịt lợn đều phải có mô tả để chúng tôi không nhầm lẫn.",
+      "rating": 8.7
+    },
+    {
+      "author": "Purwanto S.",
+      "text": "Vị trí chiến lược, giao thông thuận tiện, nhiều nhà hàng gần khách sạn, bữa sáng ngon, phòng tập thể dục và hồ bơi, tôi thích ở tại Khách sạn Niko Sài Gòn.",
+      "rating": 9.2
+    },
+    {
+      "author": "A***i",
+      "text": "Khách sạn trên cả mong đợi. Nhân viên thân thiện, gọn gàng & sạch sẽ, phòng rộng rãi, giường ngủ tuyệt vời, gối êm ái, đồ ăn sáng ngon. Vị trí tuyệt vời, ngay trung tâm Sài Gòn. Chỉ cần đi xuống là đến trung tâm thương mại Takashimaya và băng qua đường là đến Quảng trường Sài Gòn. Xung quanh có nhiều quán cà phê, quán bar, cửa hàng tiện lợi và nhiều quán ăn đường phố.",
+      "rating": 9.3
+    },
+    {
+      "author": "Purwanto S.",
+      "text": "Vị trí chiến lược, giao thông thuận tiện, nhiều nhà hàng gần khách sạn, bữa sáng ngon, phòng tập thể dục và hồ bơi, tôi thích ở tại Khách sạn Niko Sài Gòn.",
+      "rating": 10.0
+    },
+    {
+      "author": "NgoThi T.",
+      "text": "Khách sạn ưu ái đặc biệt trên yêu cầu, dành cho chúng tôi phòng có cửa sổ, khi đăng ký không có, cảm ơn khách sạn đã cho chúng tôi cảm nhận hạnh phúc , biết ơn vì sự phục vụ nhiệt tình vui vẻ .",
+      "rating": 9.7
+    },
+    {
+      "author": "Natasha E. G.",
+      "text": "Đây tưng la một khach sạn tuyệt vơi! Phòng sạch sẽ và ấm cúng, và quá trình kiểm tra là siêu nhanh. Khách sạn này rất gần sân bay, và họ có một starbucks ở tầng dưới, siêu tiện lợi! Sẽ quay lại lần nữa.",
+      "rating": 9.7
+    },
+    {
+      "author": "Trn t.",
+      "text": "Chỗ ở thì tuyệt vời, view cũng rất oke, nhân viên thì thân thiện, bữa sáng cũng rất chi là ngon. Có dịp sẽ ghé lại",
+      "rating": 8.5
+    },
+    {
+      "author": "Heather N. H.",
+      "text": "Nhân viên rất hữu ích với các đề xuất và gợi ý về những việc cần làm gần đó. Ngay bên kia đường là một công viên/khu vực đi bộ. Công viên đã đóng cửa vì họ đang chuẩn bị cho Tết Nguyên đán nhưng thật thú vị khi xem họ đang làm gì.",
+      "rating": 10.0
+    },
+    {
+      "author": "Bayu S.",
+      "text": "Khách sạn Lacation nằm bên đường đại lộ Hồ Chí Minh và cách chợ ben hơn 800 m và gần với viện bảo tàng ho chi minh, bảo tàng chiến tranh và cung điện độc lập.",
+      "rating": 9.1
+    },
+    {
+      "author": "Tran T. D. L.",
+      "text": "Tôi rất hài lòng về tất cả dịch vụ ở đây. Hy vọng sẽ sớm quay lại",
+      "rating": 9.4
+    },
+    {
+      "author": "Iko P.",
+      "text": "Vị trí hoàn hảo. Tôi thích cách khách sạn nằm ngay bên kia công viên. Phòng Executive/Lounge có giá trị rất tốt với F&B miễn phí cả ngày. Phòng họp miễn phí rất hữu ích vì tôi cần họp trực tuyến. Nhân viên cũng khá chu đáo. Rất đáng để giới thiệu.",
+      "rating": 10.0
+    },
+    {
+      "author": "Nguyen T. H. Y.",
+      "text": "Rất dễ chịu. Sau 18 năm quay lại tôi thấy kháchsạn đã nâng cấp rất nhiều. Nhân viên cực kỳ thâm thiện. Điểm rất cộng của khách sạn là vị trí ngay giữa trung tâm mà carpark rộng rãi thoải mái. Tôi sẽ quay lại",
+      "rating": 9.4
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Crawl History DAO - CRUD operations for CrawlHistory.
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from ..orm import CrawlHistory, CrawlStatus
+from orm import CrawlHistory, CrawlStatus
 
 
 class CrawlHistoryDAO:

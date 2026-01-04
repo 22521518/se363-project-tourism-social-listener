@@ -10,7 +10,7 @@ A PySpark Structured Streaming consumer for web crawl requests that:
 
 Usage (spark-submit):
     spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0 \
-        projects/services/ingestion/web-crawl/kafka/spark_consumer.py
+        projects/services/ingestion/web-crawl/messaging/spark_consumer.py
 
 Environment variables (from .env):
     - KAFKA_BOOTSTRAP_SERVERS
@@ -101,7 +101,7 @@ def process_batch_and_write_to_db(batch_df, batch_id):
     """
     from core import WebCrawlService, DuplicateUrlError
     from dao.json_file_writer import JsonFileWriter
-    from kafka.producer import WebCrawlKafkaProducer
+    from messaging.producer import WebCrawlKafkaProducer
     
     if batch_df.isEmpty():
         logger.info(f"Batch {batch_id}: Empty batch, skipping")

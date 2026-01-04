@@ -36,4 +36,10 @@ echo "Installing/Updating requirements..."
 python -m pip install --upgrade pip
 python -m pip install -r "${REQ_FILE}"
 
+# Install Playwright browsers (required by crawl4ai)
+echo "Installing Playwright browsers..."
+python -m playwright install chromium
+# Also install system dependencies if possible (may require sudo)
+python -m playwright install-deps chromium 2>/dev/null || echo "Note: Could not install system deps (may need sudo). Browser should still work."
+
 echo "Environment setup complete."

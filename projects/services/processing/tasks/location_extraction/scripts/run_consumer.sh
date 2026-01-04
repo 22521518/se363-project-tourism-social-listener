@@ -29,4 +29,4 @@ echo "PYTHONPATH: $PYTHONPATH"
 echo "Arguments: $@"
 
 # Run the consumer module
-python -m projects.services.processing.tasks.location_extraction.kafka.consumer "$@"
+python -m projects.services.processing.tasks.location_extraction.messaging.consumer "$@"

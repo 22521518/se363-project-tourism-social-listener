@@ -29,10 +29,12 @@ class JsonFileWriter:
         self.base_path = base_path
         self.history_dir = os.path.join(base_path, "crawl_history")
         self.result_dir = os.path.join(base_path, "crawl_result")
+        self.error_dir = os.path.join(base_path, "crawl_errors")
         
         # Ensure directories exist
         os.makedirs(self.history_dir, exist_ok=True)
         os.makedirs(self.result_dir, exist_ok=True)
+        os.makedirs(self.error_dir, exist_ok=True)
     
     def save_history(self, request_id: str, data: dict) -> str:
         """
@@ -62,6 +64,21 @@ class JsonFileWriter:
         """
         filepath = os.path.join(self.result_dir, f"{request_id}.json")
         self._save_json(filepath, data)
+        return filepath
+
+    def save_error(self, request_id: str, error_data: dict) -> str:
+        """
+        Save crawl error to JSON file.
+        
+        Args:
+            request_id: Unique request ID
+            error_data: Error data dictionary
+            
+        Returns:
+            Path to saved file
+        """
+        filepath = os.path.join(self.error_dir, f"{request_id}.json")
+        self._save_json(filepath, error_data)
         return filepath
     
     def get_history(self, request_id: str) -> Optional[dict]:

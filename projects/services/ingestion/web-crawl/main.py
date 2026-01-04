@@ -12,14 +12,25 @@ import os
 import logging
 
 # Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
+
+# Load .env from root project directory (4 levels up from web-crawl)
+# web-crawl -> ingestion -> services -> projects -> airflow (root)
+root_env_path = Path(current_dir).parents[3] / ".env"
+if root_env_path.exists():
+    load_dotenv(root_env_path)
+    print(f"[INFO] Loaded .env from: {root_env_path}")
+else:
+    load_dotenv()
+    print(f"[INFO] Using default .env search (root not found at {root_env_path})")
 
 from core import WebCrawlService, DuplicateUrlError
-from kafka.producer import WebCrawlKafkaProducer
-from kafka.consumer import WebCrawlKafkaConsumer
+from messaging.producer import WebCrawlKafkaProducer
+from messaging.consumer import WebCrawlKafkaConsumer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ Crawl Result DAO - CRUD operations for CrawlResult.
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from ..orm import CrawlResult
+from orm import CrawlResult
 
 
 class CrawlResultDAO:
