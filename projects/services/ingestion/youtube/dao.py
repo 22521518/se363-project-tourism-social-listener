@@ -5,9 +5,9 @@ from datetime import datetime, UTC
 from typing import Optional, List
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from .models import (
     Base,
@@ -47,7 +47,38 @@ class YouTubeDAO:
     
     def init_db(self) -> None:
         """Initialize database tables."""
+        # Ensure schema integrity before creating new tables
+        self._ensure_schema_integrity()
         Base.metadata.create_all(self.engine)
+
+    def _ensure_schema_integrity(self) -> None:
+        """
+        Check for and fix known schema issues.
+        Specifically ensures tables have primary keys.
+        """
+        inspector = inspect(self.engine)
+        
+        # List of tables to check for missing PKs
+        tables_to_check = ["youtube_channels", "youtube_videos", "youtube_comments"]
+        
+        with self.engine.connect() as conn:
+            for table_name in tables_to_check:
+                if inspector.has_table(table_name):
+                    pk_constraint = inspector.get_pk_constraint(table_name)
+                    if not pk_constraint or not pk_constraint.get("constrained_columns"):
+                        print(f"Fixing missing PRIMARY KEY on {table_name} table...")
+                        try:
+                            # We assume 'id' column exists and should be the PK
+                            conn.execute(text(f"ALTER TABLE {table_name} ADD PRIMARY KEY (id)"))
+                            conn.commit()
+                            print(f"Successfully added PRIMARY KEY to {table_name}")
+                        except Exception as e:
+                            print(f"Warning: Could not add PRIMARY KEY to {table_name}: {e}")
+
+    
+    # ===================
+    # Channel Operations
+    # ===================
     
     # ===================
     # Channel Operations
@@ -58,37 +89,55 @@ class YouTubeDAO:
         Save or update a channel in the database.
         Uses upsert pattern for idempotency.
         """
+        self.save_channels([channel], [raw_payload] if raw_payload else None)
+
+    def save_channels(self, channels: List[ChannelDTO], raw_payloads: List[dict] = None) -> None:
+        """Save multiple channels in a batch using optimal Postgres upsert."""
+        if not channels:
+            return
+
+        from sqlalchemy.dialects.postgresql import insert
+        
+        raw_payloads = raw_payloads or [None] * len(channels)
+        values_dict = {}  # Use dict to deduplicate by id, keeping last occurrence
+        now = datetime.now(UTC)
+
+        for channel, payload in zip(channels, raw_payloads):
+            values_dict[channel.id] = {
+                "id": channel.id,
+                "title": channel.title,
+                "description": channel.description,
+                "custom_url": channel.custom_url,
+                "published_at": channel.published_at,
+                "thumbnail_url": channel.thumbnail_url,
+                "subscriber_count": channel.subscriber_count,
+                "video_count": channel.video_count,
+                "view_count": channel.view_count,
+                "country": channel.country,
+                "raw_payload": payload,
+                "updated_at": now
+            }
+
+        values = list(values_dict.values())  # Deduplicated list
+        stmt = insert(YouTubeChannelModel).values(values)
+        
+        # Define update columns (exclude primary key and created_at)
+        update_dict = {
+            col.name: col for col in stmt.excluded 
+            if col.name not in ['id', 'created_at']
+        }
+        
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['id'],
+            set_=update_dict
+        )
+        
         with self.get_session() as session:
-            existing = session.query(YouTubeChannelModel).filter_by(id=channel.id).first()
-            
-            if existing:
-                # Update existing channel
-                existing.title = channel.title
-                existing.description = channel.description
-                existing.custom_url = channel.custom_url
-                existing.thumbnail_url = channel.thumbnail_url
-                existing.subscriber_count = channel.subscriber_count
-                existing.video_count = channel.video_count
-                existing.view_count = channel.view_count
-                existing.country = channel.country
-                existing.raw_payload = raw_payload
-                existing.updated_at = datetime.now(UTC)
-            else:
-                # Insert new channel
-                model = YouTubeChannelModel(
-                    id=channel.id,
-                    title=channel.title,
-                    description=channel.description,
-                    custom_url=channel.custom_url,
-                    published_at=channel.published_at,
-                    thumbnail_url=channel.thumbnail_url,
-                    subscriber_count=channel.subscriber_count,
-                    video_count=channel.video_count,
-                    view_count=channel.view_count,
-                    country=channel.country,
-                    raw_payload=raw_payload,
-                )
-                session.add(model)
+            try:
+                session.execute(stmt)
+            except Exception as e:
+                print(f"Error bulk saving channels: {e}")
+                raise
     
     def get_channel(self, channel_id: str) -> Optional[ChannelDTO]:
         """Retrieve a channel by ID."""
@@ -119,44 +168,58 @@ class YouTubeDAO:
     
     def save_video(self, video: VideoDTO, raw_payload: dict = None) -> None:
         """Save or update a video in the database."""
-        with self.get_session() as session:
-            existing = session.query(YouTubeVideoModel).filter_by(id=video.id).first()
-            
-            if existing:
-                existing.title = video.title
-                existing.description = video.description
-                existing.thumbnail_url = video.thumbnail_url
-                existing.view_count = video.view_count
-                existing.like_count = video.like_count
-                existing.comment_count = video.comment_count
-                existing.duration = video.duration
-                existing.tags = list(video.tags)
-                existing.category_id = video.category_id
-                existing.raw_payload = raw_payload
-                existing.updated_at = datetime.now(UTC)
-            else:
-                model = YouTubeVideoModel(
-                    id=video.id,
-                    channel_id=video.channel_id,
-                    title=video.title,
-                    description=video.description,
-                    published_at=video.published_at,
-                    thumbnail_url=video.thumbnail_url,
-                    view_count=video.view_count,
-                    like_count=video.like_count,
-                    comment_count=video.comment_count,
-                    duration=video.duration,
-                    tags=list(video.tags),
-                    category_id=video.category_id,
-                    raw_payload=raw_payload,
-                )
-                session.add(model)
+        self.save_videos([video], [raw_payload] if raw_payload else None)
     
     def save_videos(self, videos: List[VideoDTO], raw_payloads: List[dict] = None) -> None:
-        """Save multiple videos in a batch."""
+        """Save multiple videos in a batch using optimal Postgres upsert."""
+        if not videos:
+            return
+
+        from sqlalchemy.dialects.postgresql import insert
+        
         raw_payloads = raw_payloads or [None] * len(videos)
+        values_dict = {}  # Use dict to deduplicate by id, keeping last occurrence
+        now = datetime.now(UTC)
+
         for video, payload in zip(videos, raw_payloads):
-            self.save_video(video, payload)
+            values_dict[video.id] = {
+                "id": video.id,
+                "channel_id": video.channel_id,
+                "title": video.title,
+                "description": video.description,
+                "published_at": video.published_at,
+                "thumbnail_url": video.thumbnail_url,
+                "view_count": video.view_count,
+                "like_count": video.like_count,
+                "comment_count": video.comment_count,
+                "duration": video.duration,
+                "tags": list(video.tags),
+                "category_id": video.category_id,
+                "raw_payload": payload,
+                "updated_at": now
+            }
+
+        values = list(values_dict.values())  # Deduplicated list
+
+        stmt = insert(YouTubeVideoModel).values(values)
+        
+        update_dict = {
+            col.name: col for col in stmt.excluded 
+            if col.name not in ['id', 'created_at']
+        }
+        
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['id'],
+            set_=update_dict
+        )
+        
+        with self.get_session() as session:
+            try:
+                session.execute(stmt)
+            except Exception as e:
+                print(f"Error bulk saving videos: {e}")
+                # Fallback or re-raise? Re-raising to let Spark retry logic handle it
+                raise
     
     def get_video(self, video_id: str) -> Optional[VideoDTO]:
         """Retrieve a video by ID."""
@@ -194,37 +257,54 @@ class YouTubeDAO:
     
     def save_comment(self, comment: CommentDTO, raw_payload: dict = None) -> None:
         """Save or update a comment in the database."""
-        with self.get_session() as session:
-            existing = session.query(YouTubeCommentModel).filter_by(id=comment.id).first()
-            
-            if existing:
-                existing.text = comment.text
-                existing.like_count = comment.like_count
-                existing.updated_at_youtube = comment.updated_at
-                existing.reply_count = comment.reply_count
-                existing.raw_payload = raw_payload
-                existing.updated_at = datetime.now(UTC)
-            else:
-                model = YouTubeCommentModel(
-                    id=comment.id,
-                    video_id=comment.video_id,
-                    author_display_name=comment.author_display_name,
-                    author_channel_id=comment.author_channel_id,
-                    text=comment.text,
-                    like_count=comment.like_count,
-                    published_at=comment.published_at,
-                    updated_at_youtube=comment.updated_at,
-                    parent_id=comment.parent_id,
-                    reply_count=comment.reply_count,
-                    raw_payload=raw_payload,
-                )
-                session.add(model)
+        self.save_comments([comment], [raw_payload] if raw_payload else None)
     
     def save_comments(self, comments: List[CommentDTO], raw_payloads: List[dict] = None) -> None:
-        """Save multiple comments in a batch."""
+        """Save multiple comments in a batch using optimal Postgres upsert."""
+        if not comments:
+            return
+
+        from sqlalchemy.dialects.postgresql import insert
+        
         raw_payloads = raw_payloads or [None] * len(comments)
+        values_dict = {}  # Use dict to deduplicate by id, keeping last occurrence
+        now = datetime.now(UTC)
+
         for comment, payload in zip(comments, raw_payloads):
-            self.save_comment(comment, payload)
+            values_dict[comment.id] = {
+                "id": comment.id,
+                "video_id": comment.video_id,
+                "author_display_name": comment.author_display_name,
+                "author_channel_id": comment.author_channel_id,
+                "text": comment.text,
+                "like_count": comment.like_count,
+                "published_at": comment.published_at,
+                "updated_at_youtube": comment.updated_at,
+                "parent_id": comment.parent_id,
+                "reply_count": comment.reply_count,
+                "raw_payload": payload,
+                "updated_at": now
+            }
+
+        values = list(values_dict.values())  # Deduplicated list
+        stmt = insert(YouTubeCommentModel).values(values)
+        
+        update_dict = {
+            col.name: col for col in stmt.excluded 
+            if col.name not in ['id', 'created_at']
+        }
+        
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['id'],
+            set_=update_dict
+        )
+        
+        with self.get_session() as session:
+            try:
+                session.execute(stmt)
+            except Exception as e:
+                print(f"Error bulk saving comments: {e}")
+                raise
     
     def get_video_comments(self, video_id: str, limit: int = 100) -> List[CommentDTO]:
         """Get comments for a specific video."""

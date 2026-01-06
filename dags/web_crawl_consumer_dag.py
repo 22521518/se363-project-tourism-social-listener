@@ -7,6 +7,11 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables explicitly
+load_dotenv()
+
 
 # Paths
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
