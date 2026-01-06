@@ -137,7 +137,10 @@ class ChannelTrackingManager:
     
     async def check_new_videos(self, channel_id: str) -> List[VideoDTO]:
         """
-        Check for new videos on a channel.
+        Check for new videos on a channel using incremental fetching.
+        
+        Uses smart fetching: stops early when hitting already-seen videos,
+        rather than fetching all videos and filtering afterwards.
         
         Args:
             channel_id: YouTube channel ID
@@ -147,17 +150,18 @@ class ChannelTrackingManager:
         """
         logger.info(f"Checking for new videos on channel: {channel_id}")
         
-        # Get existing video IDs for deduplication
+        # Get existing video IDs for incremental fetch
         existing_ids = set(self.dao.get_video_ids_for_channel(channel_id))
+        is_first_check = len(existing_ids) == 0
         
-        # Fetch latest videos from API
-        videos = await self.api_manager.fetch_channel_videos(
+        # Fetch videos with incremental mode (stops when hitting existing video)
+        # On first check, fetch all; on subsequent checks, use early termination
+        new_videos = await self.api_manager.fetch_channel_videos(
             channel_id, 
-            max_results=self.config.max_videos_per_channel
+            max_results=self.config.max_videos_per_channel,
+            existing_video_ids=existing_ids,
+            stop_on_existing=not is_first_check  # Only use incremental on subsequent checks
         )
-        
-        # Filter to only new videos
-        new_videos = [v for v in videos if v.id not in existing_ids]
         
         if new_videos:
             logger.info(f"Found {len(new_videos)} new videos for channel {channel_id}")

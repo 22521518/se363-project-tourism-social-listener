@@ -9,7 +9,7 @@ A standalone consumer for testing that:
 4. Optionally produces output to KAFKA_TOPIC_LOCATION_OUTPUT
 
 Usage:
-    python -m projects.services.processing.tasks.location_extraction.kafka.consumer
+    python -m projects.services.processing.tasks.location_extraction.kafka_files.consumer
 
 Environment variables (from .env):
     - KAFKA_BOOTSTRAP_SERVERS
@@ -33,12 +33,20 @@ if str(project_root) not in sys.path:
 
 from dotenv import load_dotenv
 
-# Load environment variables
-env_path = Path(__file__).resolve().parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
+# Load environment variables from root .env
+# project_root is already defined above (5 levels up from this file)
+root_env_path = project_root / ".env"
+local_env_path = Path(__file__).resolve().parent.parent / ".env"
+
+if root_env_path.exists():
+    load_dotenv(root_env_path)
+    print(f"Loaded .env from: {root_env_path}")
+elif local_env_path.exists():
+    load_dotenv(local_env_path)
+    print(f"Loaded .env from: {local_env_path}")
 else:
     load_dotenv()
+    print("Using default dotenv search")
 
 # Configure logging
 logging.basicConfig(
@@ -85,8 +93,8 @@ class LocationExtractionConsumer:
         logger.info(f"DB Host: {self.db_config.host}")
         logger.info(f"===================")
         
+        # DAO auto-initializes tables (auto_init=True by default)
         self.dao = LocationExtractionDAO(self.db_config)
-        self.dao.init_db()
         
         self.use_llm = use_llm and LLM_AVAILABLE
         self.pipeline = None

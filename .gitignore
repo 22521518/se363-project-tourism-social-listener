@@ -12,7 +12,6 @@
 **/*.venv*/**
 
 # Ignore environment variables
-# .env
 *.bak
 logs
 .env

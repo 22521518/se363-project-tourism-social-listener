@@ -15,8 +15,9 @@ from .models import (
     YouTubeVideoModel,
     YouTubeCommentModel,
     TrackedChannelModel,
+    IngestionCheckpointModel,
 )
-from .dto import ChannelDTO, VideoDTO, CommentDTO, TrackedChannelDTO
+from .dto import ChannelDTO, VideoDTO, CommentDTO, TrackedChannelDTO, IngestionCheckpointDTO
 from .config import DatabaseConfig
 
 
@@ -372,4 +373,159 @@ class YouTubeDAO:
             last_checked=model.last_checked,
             last_video_published=model.last_video_published,
             is_active=model.is_active,
+        )
+
+    # ===================
+    # Checkpoint Operations
+    # ===================
+    
+    def save_checkpoint(self, checkpoint: 'IngestionCheckpointDTO') -> int:
+        """
+        Save or update an ingestion checkpoint.
+        
+        Returns:
+            The checkpoint ID
+        """
+        from .models import IngestionCheckpointModel
+        
+        with self.get_session() as session:
+            if checkpoint.id:
+                # Update existing
+                model = session.query(IngestionCheckpointModel).filter_by(id=checkpoint.id).first()
+                if model:
+                    model.next_page_token = checkpoint.next_page_token
+                    model.last_video_id = checkpoint.last_video_id
+                    model.fetched_count = checkpoint.fetched_count
+                    model.target_count = checkpoint.target_count
+                    model.status = checkpoint.status
+                    model.error_message = checkpoint.error_message
+                    model.error_code = checkpoint.error_code
+                    model.rate_limit_reset_at = checkpoint.rate_limit_reset_at
+                    model.retry_count = checkpoint.retry_count
+                    model.completed_at = checkpoint.completed_at
+                    session.flush()
+                    return model.id
+            
+            # Create new
+            model = IngestionCheckpointModel(
+                channel_id=checkpoint.channel_id,
+                operation_type=checkpoint.operation_type,
+                next_page_token=checkpoint.next_page_token,
+                last_video_id=checkpoint.last_video_id,
+                fetched_count=checkpoint.fetched_count,
+                target_count=checkpoint.target_count,
+                status=checkpoint.status,
+                error_message=checkpoint.error_message,
+                error_code=checkpoint.error_code,
+                rate_limit_reset_at=checkpoint.rate_limit_reset_at,
+                retry_count=checkpoint.retry_count,
+            )
+            session.add(model)
+            session.flush()
+            return model.id
+    
+    def get_active_checkpoint(
+        self, 
+        channel_id: str, 
+        operation_type: str
+    ) -> Optional['IngestionCheckpointDTO']:
+        """
+        Get an active (non-completed) checkpoint for a channel and operation.
+        
+        Used to resume interrupted fetches.
+        """
+        from .models import IngestionCheckpointModel
+        from .dto import IngestionCheckpointDTO
+        
+        with self.get_session() as session:
+            model = (
+                session.query(IngestionCheckpointModel)
+                .filter_by(
+                    channel_id=channel_id,
+                    operation_type=operation_type,
+                )
+                .filter(IngestionCheckpointModel.status.in_(["in_progress", "rate_limited"]))
+                .order_by(IngestionCheckpointModel.started_at.desc())
+                .first()
+            )
+            
+            if not model:
+                return None
+            
+            return self._model_to_checkpoint_dto(model)
+    
+    def get_checkpoint_by_id(self, checkpoint_id: int) -> Optional['IngestionCheckpointDTO']:
+        """Get a checkpoint by ID."""
+        from .models import IngestionCheckpointModel
+        
+        with self.get_session() as session:
+            model = session.query(IngestionCheckpointModel).filter_by(id=checkpoint_id).first()
+            if not model:
+                return None
+            return self._model_to_checkpoint_dto(model)
+    
+    def complete_checkpoint(self, checkpoint_id: int) -> None:
+        """Mark a checkpoint as completed."""
+        from .models import IngestionCheckpointModel
+        
+        with self.get_session() as session:
+            model = session.query(IngestionCheckpointModel).filter_by(id=checkpoint_id).first()
+            if model:
+                model.status = "completed"
+                model.completed_at = datetime.now(UTC)
+    
+    def get_rate_limited_checkpoints(self) -> List['IngestionCheckpointDTO']:
+        """Get all checkpoints that are rate-limited and ready to retry."""
+        from .models import IngestionCheckpointModel
+        from .dto import IngestionCheckpointDTO
+        
+        with self.get_session() as session:
+            now = datetime.now(UTC)
+            models = (
+                session.query(IngestionCheckpointModel)
+                .filter_by(status="rate_limited")
+                .filter(
+                    (IngestionCheckpointModel.rate_limit_reset_at == None) |  # noqa: E711
+                    (IngestionCheckpointModel.rate_limit_reset_at <= now)
+                )
+                .all()
+            )
+            return [self._model_to_checkpoint_dto(m) for m in models]
+    
+    def delete_old_checkpoints(self, days: int = 7) -> int:
+        """Delete completed checkpoints older than specified days."""
+        from .models import IngestionCheckpointModel
+        from datetime import timedelta
+        
+        with self.get_session() as session:
+            cutoff = datetime.now(UTC) - timedelta(days=days)
+            deleted = (
+                session.query(IngestionCheckpointModel)
+                .filter_by(status="completed")
+                .filter(IngestionCheckpointModel.completed_at < cutoff)
+                .delete()
+            )
+            return deleted
+    
+    @staticmethod
+    def _model_to_checkpoint_dto(model: 'IngestionCheckpointModel') -> 'IngestionCheckpointDTO':
+        """Convert ORM model to DTO."""
+        from .dto import IngestionCheckpointDTO
+        
+        return IngestionCheckpointDTO(
+            id=model.id,
+            channel_id=model.channel_id,
+            operation_type=model.operation_type,
+            next_page_token=model.next_page_token,
+            last_video_id=model.last_video_id,
+            fetched_count=model.fetched_count,
+            target_count=model.target_count,
+            status=model.status,
+            error_message=model.error_message,
+            error_code=model.error_code,
+            rate_limit_reset_at=model.rate_limit_reset_at,
+            retry_count=model.retry_count,
+            started_at=model.started_at,
+            last_updated=model.last_updated,
+            completed_at=model.completed_at,
         )

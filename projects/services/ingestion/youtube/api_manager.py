@@ -3,19 +3,49 @@
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Optional, List, Dict, Any
+from datetime import datetime, UTC, timedelta
+from typing import Optional, List, Dict, Any, Tuple
 from functools import wraps
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from .config import YouTubeConfig, IngestionConfig
-from .dto import ChannelDTO, VideoDTO, CommentDTO, RawIngestionMessage
+from .dto import ChannelDTO, VideoDTO, CommentDTO, RawIngestionMessage, IngestionCheckpointDTO, RateLimitError
 from .dao import YouTubeDAO
 
 # Configure structured logging
 logger = logging.getLogger(__name__)
+
+
+def parse_rate_limit_headers(error: HttpError) -> Tuple[Optional[int], Optional[str]]:
+    """
+    Parse rate limit info from YouTube API error response.
+    
+    Returns:
+        Tuple of (retry_after_seconds, error_reason)
+    """
+    retry_after = None
+    reason = None
+    
+    try:
+        # Check for Retry-After header
+        if hasattr(error, 'resp') and error.resp:
+            retry_after_str = error.resp.get('retry-after')
+            if retry_after_str:
+                retry_after = int(retry_after_str)
+        
+        # Parse error reason from response body
+        if hasattr(error, 'content'):
+            import json
+            content = json.loads(error.content.decode('utf-8'))
+            errors = content.get('error', {}).get('errors', [])
+            if errors:
+                reason = errors[0].get('reason', 'unknown')
+    except Exception:
+        pass
+    
+    return retry_after, reason
 
 
 def with_retry(max_retries: int = 3, base_delay: float = 1.0):
@@ -32,18 +62,22 @@ def with_retry(max_retries: int = 3, base_delay: float = 1.0):
                     return await func(*args, **kwargs)
                 except HttpError as e:
                     last_exception = e
+                    retry_after, reason = parse_rate_limit_headers(e)
+                    
                     if e.resp.status in (403, 429):  # Rate limit or quota exceeded
-                        delay = base_delay * (2 ** attempt)
+                        delay = retry_after if retry_after else base_delay * (2 ** attempt)
                         logger.warning(
-                            f"Rate limited on attempt {attempt + 1}, "
-                            f"retrying in {delay}s: {e}"
+                            f"Rate limited on attempt {attempt + 1}/{max_retries} "
+                            f"[status={e.resp.status}, reason={reason}], "
+                            f"retrying in {delay}s"
                         )
+                        logger.debug(f"Rate limit error details: {e}")
                         await asyncio.sleep(delay)
                     elif e.resp.status >= 500:  # Server error
                         delay = base_delay * (2 ** attempt)
                         logger.warning(
-                            f"Server error on attempt {attempt + 1}, "
-                            f"retrying in {delay}s: {e}"
+                            f"Server error on attempt {attempt + 1}/{max_retries} "
+                            f"[status={e.resp.status}], retrying in {delay}s: {e}"
                         )
                         await asyncio.sleep(delay)
                     else:
@@ -52,7 +86,7 @@ def with_retry(max_retries: int = 3, base_delay: float = 1.0):
                     last_exception = e
                     delay = base_delay * (2 ** attempt)
                     logger.warning(
-                        f"Error on attempt {attempt + 1}, "
+                        f"Error on attempt {attempt + 1}/{max_retries}, "
                         f"retrying in {delay}s: {e}"
                     )
                     await asyncio.sleep(delay)
@@ -72,6 +106,7 @@ class YouTubeAPIManager:
     - Video fetching
     - Comment fetching
     - Database persistence
+    - Checkpoint-based resumable fetching
     """
     
     def __init__(self, config: IngestionConfig, dao: Optional[YouTubeDAO] = None):
@@ -94,6 +129,75 @@ class YouTubeAPIManager:
         """Run a synchronous function in the event loop."""
         # return self._loop.run_in_executor(None, lambda: func(*args, **kwargs))
         return await asyncio.to_thread(func, *args, **kwargs)
+    
+    def _create_checkpoint(
+        self,
+        channel_id: str,
+        operation_type: str,
+        **kwargs
+    ) -> IngestionCheckpointDTO:
+        """Create a new checkpoint DTO."""
+        return IngestionCheckpointDTO(
+            id=None,
+            channel_id=channel_id,
+            operation_type=operation_type,
+            started_at=datetime.now(UTC),
+            **kwargs
+        )
+    
+    def _save_checkpoint(self, checkpoint: IngestionCheckpointDTO) -> IngestionCheckpointDTO:
+        """Save checkpoint to database and return updated DTO with ID."""
+        if not self.dao:
+            return checkpoint
+        
+        checkpoint_id = self.dao.save_checkpoint(checkpoint)
+        checkpoint.id = checkpoint_id
+        return checkpoint
+    
+    def _handle_rate_limit(
+        self,
+        error: HttpError,
+        checkpoint: IngestionCheckpointDTO,
+        context: str = ""
+    ) -> RateLimitError:
+        """
+        Handle rate limit error: log details, update checkpoint, and return custom exception.
+        """
+        retry_after, reason = parse_rate_limit_headers(error)
+        
+        # Calculate reset time
+        reset_at = None
+        if retry_after:
+            reset_at = datetime.now(UTC) + timedelta(seconds=retry_after)
+        
+        # Update checkpoint with rate limit info
+        checkpoint.status = "rate_limited"
+        checkpoint.error_message = f"{reason or 'quota_exceeded'}: {str(error)}"
+        checkpoint.error_code = error.resp.status
+        checkpoint.rate_limit_reset_at = reset_at
+        checkpoint.retry_count += 1
+        
+        # Save updated checkpoint
+        if self.dao:
+            self.dao.save_checkpoint(checkpoint)
+        
+        # Log detailed info
+        logger.error(
+            f"RATE LIMIT HIT during {context} for channel {checkpoint.channel_id}\n"
+            f"  Status: {error.resp.status}\n"
+            f"  Reason: {reason}\n"
+            f"  Retry After: {retry_after}s\n"
+            f"  Progress: {checkpoint.fetched_count}/{checkpoint.target_count or '?'} items\n"
+            f"  Page Token: {checkpoint.next_page_token}\n"
+            f"  Checkpoint ID: {checkpoint.id}"
+        )
+        
+        return RateLimitError(
+            message=f"Rate limit hit during {context}",
+            error_code=error.resp.status,
+            checkpoint=checkpoint,
+            retry_after=retry_after
+        )
     
     # ===================
     # Channel Management Services
@@ -307,7 +411,9 @@ class YouTubeAPIManager:
     async def fetch_channel_videos(
         self, 
         channel_id: str, 
-        max_results: int = None
+        max_results: int = None,
+        existing_video_ids: set = None,
+        stop_on_existing: bool = False
     ) -> List[VideoDTO]:
         """
         Fetch videos uploaded by a channel.
@@ -315,6 +421,8 @@ class YouTubeAPIManager:
         Args:
             channel_id: YouTube channel ID
             max_results: Maximum number of videos to fetch
+            existing_video_ids: Set of video IDs already in database (for incremental fetch)
+            stop_on_existing: If True, stop fetching when hitting existing video (incremental mode)
             
         Returns:
             List of VideoDTO objects
@@ -327,7 +435,10 @@ class YouTubeAPIManager:
             channel_id = resolved_id
             
         max_results = max_results or self.config.max_videos_per_channel
-        logger.info(f"Fetching up to {max_results} videos for channel: {channel_id}")
+        existing_video_ids = existing_video_ids or set()
+        
+        mode_str = "incremental" if stop_on_existing and existing_video_ids else "full"
+        logger.info(f"Fetching videos for channel {channel_id} (mode={mode_str}, max={max_results})")
         
         # First, get the uploads playlist ID
         request = self.youtube.channels().list(
@@ -346,6 +457,7 @@ class YouTubeAPIManager:
         # Fetch video IDs from uploads playlist
         video_ids = []
         next_page_token = None
+        hit_existing = False
         
         while len(video_ids) < max_results:
             request = self.youtube.playlistItems().list(
@@ -357,11 +469,25 @@ class YouTubeAPIManager:
             response = await self._run_sync(request.execute)
             
             for item in response.get("items", []):
-                video_ids.append(item["contentDetails"]["videoId"])
+                vid_id = item["contentDetails"]["videoId"]
+                
+                # Incremental mode: stop when we hit an existing video
+                if stop_on_existing and vid_id in existing_video_ids:
+                    logger.info(f"Hit existing video {vid_id}, stopping incremental fetch")
+                    hit_existing = True
+                    break
+                    
+                video_ids.append(vid_id)
             
+            if hit_existing:
+                break
+                
             next_page_token = response.get("nextPageToken")
             if not next_page_token:
                 break
+        
+        if stop_on_existing:
+            logger.info(f"Incremental fetch found {len(video_ids)} new video IDs")
         
         # Fetch video details in batches
         videos = []
@@ -371,6 +497,149 @@ class YouTubeAPIManager:
             videos.extend(batch_videos)
         
         return videos
+
+    async def fetch_channel_videos_resumable(
+        self, 
+        channel_id: str, 
+        max_results: int = None,
+        existing_video_ids: set = None,
+        stop_on_existing: bool = False,
+        resume_checkpoint: IngestionCheckpointDTO = None
+    ) -> Tuple[List[VideoDTO], Optional[IngestionCheckpointDTO]]:
+        """
+        Fetch videos with checkpoint support for resumable fetching.
+        
+        This method saves progress after each page, so if rate limited,
+        we can resume from the last successful page.
+        
+        Args:
+            channel_id: YouTube channel ID
+            max_results: Maximum number of videos to fetch
+            existing_video_ids: Set of video IDs already in database
+            stop_on_existing: If True, stop when hitting existing video
+            resume_checkpoint: Optional checkpoint to resume from
+            
+        Returns:
+            Tuple of (videos, checkpoint) - checkpoint is None if completed successfully
+            
+        Raises:
+            RateLimitError: If rate limited, contains checkpoint info for resuming
+        """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+            
+        max_results = max_results or self.config.max_videos_per_channel
+        existing_video_ids = existing_video_ids or set()
+        
+        # Create or resume checkpoint
+        if resume_checkpoint:
+            checkpoint = resume_checkpoint
+            checkpoint.status = "in_progress"
+            logger.info(
+                f"Resuming video fetch for {channel_id} from checkpoint "
+                f"(fetched={checkpoint.fetched_count}, token={checkpoint.next_page_token})"
+            )
+        else:
+            checkpoint = self._create_checkpoint(
+                channel_id=channel_id,
+                operation_type="fetch_videos",
+                target_count=max_results
+            )
+        
+        # Save initial checkpoint
+        checkpoint = self._save_checkpoint(checkpoint)
+        
+        mode_str = "incremental" if stop_on_existing and existing_video_ids else "full"
+        logger.info(f"Fetching videos for channel {channel_id} (mode={mode_str}, max={max_results}, resumable=True)")
+        
+        try:
+            # Get uploads playlist ID (only if we don't have a page token yet)
+            request = self.youtube.channels().list(
+                part="contentDetails",
+                id=channel_id
+            )
+            response = await self._run_sync(request.execute)
+            
+            if not response.get("items"):
+                raise ValueError(f"Channel not found: {channel_id}")
+            
+            uploads_playlist_id = (
+                response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            )
+        except HttpError as e:
+            if e.resp.status in (403, 429):
+                raise self._handle_rate_limit(e, checkpoint, "fetch_channel_videos (playlist)")
+            raise
+        
+        # Fetch video IDs from uploads playlist with checkpoint support
+        video_ids = []
+        next_page_token = checkpoint.next_page_token  # Resume from checkpoint
+        hit_existing = False
+        
+        while len(video_ids) + checkpoint.fetched_count < max_results:
+            try:
+                request = self.youtube.playlistItems().list(
+                    part="contentDetails",
+                    playlistId=uploads_playlist_id,
+                    maxResults=min(50, max_results - len(video_ids) - checkpoint.fetched_count),
+                    pageToken=next_page_token
+                )
+                response = await self._run_sync(request.execute)
+                
+            except HttpError as e:
+                if e.resp.status in (403, 429):
+                    # Save progress before raising
+                    checkpoint.next_page_token = next_page_token
+                    raise self._handle_rate_limit(e, checkpoint, "fetch_channel_videos (pagination)")
+                raise
+            
+            for item in response.get("items", []):
+                vid_id = item["contentDetails"]["videoId"]
+                
+                # Incremental mode: stop when we hit an existing video
+                if stop_on_existing and vid_id in existing_video_ids:
+                    logger.info(f"Hit existing video {vid_id}, stopping incremental fetch")
+                    hit_existing = True
+                    break
+                    
+                video_ids.append(vid_id)
+            
+            # Update checkpoint after each successful page
+            next_page_token = response.get("nextPageToken")
+            checkpoint.next_page_token = next_page_token
+            checkpoint.fetched_count += len(response.get("items", []))
+            self._save_checkpoint(checkpoint)
+            
+            if hit_existing or not next_page_token:
+                break
+        
+        logger.info(f"Fetched {len(video_ids)} video IDs (checkpoint: {checkpoint.fetched_count} total processed)")
+        
+        # Fetch video details in batches
+        videos = []
+        for i in range(0, len(video_ids), 50):
+            try:
+                batch_ids = video_ids[i:i + 50]
+                batch_videos = await self._fetch_video_details_batch(batch_ids, channel_id)
+                videos.extend(batch_videos)
+            except HttpError as e:
+                if e.resp.status in (403, 429):
+                    # Save videos fetched so far
+                    if self.dao and videos:
+                        self.dao.save_videos(videos)
+                        logger.info(f"Saved {len(videos)} videos before rate limit")
+                    raise self._handle_rate_limit(e, checkpoint, "fetch_channel_videos (details)")
+                raise
+        
+        # Mark checkpoint as completed
+        if self.dao and checkpoint.id:
+            self.dao.complete_checkpoint(checkpoint.id)
+        
+        return videos, None  # None checkpoint means completed
     
     async def _fetch_video_details_batch(
         self, 
@@ -544,6 +813,217 @@ class YouTubeAPIManager:
     # Convenience Methods
     # ===================
     
+    async def ingest_channel_smart(
+        self, 
+        channel_id: str,
+        fetch_comments: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Smart channel ingestion: fetch all on first run, only new videos on subsequent runs.
+        
+        This method automatically detects if it's the first run (no existing videos)
+        and performs a full fetch. On subsequent runs, it only fetches videos newer
+        than those already in the database, stopping early once it hits existing content.
+        
+        Args:
+            channel_id: YouTube channel ID or handle
+            fetch_comments: Whether to also fetch comments for new videos
+            
+        Returns:
+            Dict with counts of ingested items and mode used
+        """
+        # Resolve handle if provided
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+        
+        # Fetch and save channel info
+        channel = await self.populate_channel(channel_id)
+        
+        # Check existing videos to determine mode
+        existing_ids = set()
+        if self.dao:
+            existing_ids = set(self.dao.get_video_ids_for_channel(channel_id))
+        
+        is_first_run = len(existing_ids) == 0
+        mode = "full" if is_first_run else "incremental"
+        
+        logger.info(f"Smart ingestion for {channel_id}: mode={mode}, existing_videos={len(existing_ids)}")
+        
+        # Fetch videos with appropriate mode
+        videos = await self.fetch_channel_videos(
+            channel_id,
+            existing_video_ids=existing_ids,
+            stop_on_existing=not is_first_run  # Only stop on existing if not first run
+        )
+        
+        # Save new videos
+        if self.dao and videos:
+            self.dao.save_videos(videos)
+            logger.info(f"Saved {len(videos)} {'new ' if not is_first_run else ''}videos")
+        
+        # Fetch comments for new videos only
+        total_comments = 0
+        if fetch_comments:
+            for video in videos:
+                try:
+                    comments = await self.fetch_video_comments(video.id)
+                    if self.dao:
+                        self.dao.save_comments(comments)
+                    total_comments += len(comments)
+                except Exception as e:
+                    logger.error(f"Error fetching comments for video {video.id}: {e}")
+        
+        result = {
+            "channel_id": channel_id,
+            "channel_title": channel.title,
+            "mode": mode,
+            "is_first_run": is_first_run,
+            "existing_videos_count": len(existing_ids),
+            "new_videos_count": len(videos),
+            "comments_count": total_comments,
+        }
+        
+        logger.info(f"Smart ingestion complete: {result}")
+        return result
+
+    async def ingest_channel_smart_resumable(
+        self, 
+        channel_id: str,
+        fetch_comments: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Smart channel ingestion with checkpoint support for resumable fetching.
+        
+        Same as ingest_channel_smart but saves progress to database.
+        If rate limited, progress is saved and can be resumed later.
+        
+        Args:
+            channel_id: YouTube channel ID or handle
+            fetch_comments: Whether to also fetch comments for new videos
+            
+        Returns:
+            Dict with counts of ingested items and mode used
+            
+        Raises:
+            RateLimitError: If rate limited, contains checkpoint for resuming
+        """
+        # Resolve handle if provided
+        original_channel_id = channel_id
+        if channel_id.startswith("@"):
+            resolved_id = await self.resolve_handle_to_id(channel_id)
+            if not resolved_id:
+                raise ValueError(f"Could not resolve handle: {channel_id}")
+            channel_id = resolved_id
+        
+        # Check for existing checkpoint to resume from
+        resume_checkpoint = None
+        if self.dao:
+            resume_checkpoint = self.dao.get_active_checkpoint(channel_id, "fetch_videos")
+            if resume_checkpoint:
+                logger.info(
+                    f"Found active checkpoint for {channel_id}: "
+                    f"status={resume_checkpoint.status}, "
+                    f"fetched={resume_checkpoint.fetched_count}, "
+                    f"retry_count={resume_checkpoint.retry_count}"
+                )
+        
+        # Fetch and save channel info
+        channel = await self.populate_channel(channel_id)
+        
+        # Check existing videos to determine mode
+        existing_ids = set()
+        if self.dao:
+            existing_ids = set(self.dao.get_video_ids_for_channel(channel_id))
+        
+        is_first_run = len(existing_ids) == 0 and not resume_checkpoint
+        mode = "full" if is_first_run else "incremental"
+        
+        logger.info(
+            f"Smart resumable ingestion for {channel_id}: "
+            f"mode={mode}, existing_videos={len(existing_ids)}, "
+            f"resuming={resume_checkpoint is not None}"
+        )
+        
+        # Fetch videos with checkpoint support
+        videos, remaining_checkpoint = await self.fetch_channel_videos_resumable(
+            channel_id,
+            existing_video_ids=existing_ids,
+            stop_on_existing=not is_first_run,
+            resume_checkpoint=resume_checkpoint
+        )
+        
+        # Save new videos
+        if self.dao and videos:
+            self.dao.save_videos(videos)
+            logger.info(f"Saved {len(videos)} {'new ' if not is_first_run else ''}videos")
+        
+        # Fetch comments for new videos only
+        total_comments = 0
+        if fetch_comments:
+            for video in videos:
+                try:
+                    comments = await self.fetch_video_comments(video.id)
+                    if self.dao:
+                        self.dao.save_comments(comments)
+                    total_comments += len(comments)
+                except RateLimitError:
+                    logger.warning(f"Rate limited while fetching comments for {video.id}")
+                    # Continue with other videos, comments can be fetched later
+                except Exception as e:
+                    logger.error(f"Error fetching comments for video {video.id}: {e}")
+        
+        result = {
+            "channel_id": channel_id,
+            "channel_title": channel.title,
+            "mode": mode,
+            "is_first_run": is_first_run,
+            "existing_videos_count": len(existing_ids),
+            "new_videos_count": len(videos),
+            "comments_count": total_comments,
+            "was_resumed": resume_checkpoint is not None,
+        }
+        
+        logger.info(f"Smart resumable ingestion complete: {result}")
+        return result
+
+    async def resume_rate_limited_checkpoints(self) -> List[Dict[str, Any]]:
+        """
+        Resume all rate-limited checkpoints that are ready to retry.
+        
+        This method finds all checkpoints marked as rate_limited where
+        the rate_limit_reset_at time has passed, and resumes them.
+        
+        Returns:
+            List of results from each resumed ingestion
+        """
+        if not self.dao:
+            logger.warning("DAO not configured, cannot resume checkpoints")
+            return []
+        
+        checkpoints = self.dao.get_rate_limited_checkpoints()
+        logger.info(f"Found {len(checkpoints)} rate-limited checkpoints ready to resume")
+        
+        results = []
+        for checkpoint in checkpoints:
+            try:
+                logger.info(f"Resuming checkpoint {checkpoint.id} for channel {checkpoint.channel_id}")
+                
+                if checkpoint.operation_type == "fetch_videos":
+                    result = await self.ingest_channel_smart_resumable(checkpoint.channel_id)
+                    results.append(result)
+                else:
+                    logger.warning(f"Unknown operation type: {checkpoint.operation_type}")
+                    
+            except RateLimitError as e:
+                logger.warning(f"Still rate limited for checkpoint {checkpoint.id}: {e}")
+            except Exception as e:
+                logger.error(f"Error resuming checkpoint {checkpoint.id}: {e}")
+        
+        return results
+
     async def ingest_channel_full(self, channel_id: str) -> Dict[str, Any]:
         """
         Full channel ingestion: fetch channel, videos, and comments.

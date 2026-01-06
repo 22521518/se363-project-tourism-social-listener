@@ -43,3 +43,38 @@ python -m youtube.main --mode=realtime --interval=60
 | `youtube.channels` | Channel metadata |
 | `youtube.videos` | Video metadata |
 | `youtube.comments` | Comments |
+
+## Web Crawl Connector
+
+### Structure
+```
+web-crawl/
+├── dto/                    # Pydantic DTOs
+│   ├── crawl_request_dto.py
+│   └── crawl_result_dto.py
+├── core/                   # Business logic
+│   ├── extraction_router.py
+│   ├── crawler.py
+│   └── crawl_service.py
+├── orm/                    # SQLAlchemy models
+├── dao/                    # Data access
+├── examples/               # Usage examples
+│   ├── run_console.py
+│   └── requirements.txt
+└── requirements.txt
+```
+
+### Commands
+```powershell
+cd web-crawl && pip install -r requirements.txt && crawl4ai-setup
+cd examples && python run_console.py
+```
+
+### Content Types
+| Type | Expected Sections |
+|------|-------------------|
+| `forum` | comments, travel experiences |
+| `review` | reviews, ratings |
+| `blog` | blog_sections, information |
+| `agency` | agency_info, pricing |
+| `auto` | all tourism-related |
