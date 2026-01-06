@@ -9,6 +9,10 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables explicitly
+load_dotenv()
 
 # Paths
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
@@ -51,13 +55,12 @@ with DAG(
         **os.environ,
         "VENV_DIR": VENV_PATH,
         # Database - use Docker service names
-        "DB_HOST": "postgres",
+        "DB_HOST":  "postgres",
         "DB_PORT": "5432",
         "DB_NAME": "airflow",
         "DB_USER": "airflow",
         "DB_PASSWORD": "airflow",
         # Kafka - use Docker service name
-        "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
         # LLM Configuration
         "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),
     }
