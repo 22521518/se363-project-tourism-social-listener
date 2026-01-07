@@ -1,0 +1,27 @@
+# Web Crawl Monitor - Docker Compose
+# Run with: docker-compose -f docker-compose.web-crawl-monitor.yaml up -d
+
+services:
+  webcrawl-monitor:
+    build:
+      context: ./projects/services/ingestion/web-crawl/web/streamlit
+      dockerfile: Dockerfile
+    container_name: webcrawl-monitor
+    ports:
+      - "8151:8151"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=airflow
+      - DB_USER=airflow
+      - DB_PASSWORD=airflow
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects
+    networks:
+      - default
+
+networks:
+  default:
+    name: airflow_default
+    external: true

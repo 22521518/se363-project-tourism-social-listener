@@ -42,7 +42,7 @@ except ImportError as e:
 
 # Configuration
 venv_dir = os.path.join(service_root, ".venv")
-consumer_script = os.path.join(service_root, "kafka", "spark_consumer.py")
+consumer_script = os.path.join(service_root, "messaging", "spark_consumer.py")
 packages = "org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.1,org.postgresql:postgresql:42.5.0"
 
 # Launch

@@ -36,7 +36,11 @@ def parse_iso_date_udf(date_str):
 def get_db_config_dict():
     """Helper to get config as dict to pass to workers."""
     try:
+        # Debug: Print env vars to ensure they are passed to Driver
+        # print(f"DEBUG Driver Env: DB_HOST={os.environ.get('DB_HOST')}, DB_PORT={os.environ.get('DB_PORT')}")
+        
         cfg = DatabaseConfig.from_env()
+        print(f"Driver successfully loaded DB Config for host: {cfg.host}, db: {cfg.database}")
         return {
             "user": cfg.user,
             "password": cfg.password,
@@ -44,9 +48,10 @@ def get_db_config_dict():
             "port": cfg.port,
             "database": cfg.database
         }
-    except Exception:
-        # Fallback or fail
-        return {}
+    except Exception as e:
+        print(f"CRITICAL ERROR: Failed to load DatabaseConfig on Driver: {e}")
+        # Fail hard so we know
+        raise e
 
 def process_partition(iterator, db_config_dict, kafka_config_dict):
     """
@@ -54,7 +59,12 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
     Initializes DAO once per partition.
     Also initializes Kafka Producer to forward messages.
     """
-    if not db_config_dict or not kafka_config_dict:
+    if not db_config_dict:
+        print("CRITICAL WORKER ERROR: db_config_dict is missing or empty. Skipping partition.")
+        return
+        
+    if not kafka_config_dict:
+        print("CRITICAL WORKER ERROR: kafka_config_dict is missing or empty. Skipping partition.")
         return
 
     # Reconstruct config object
@@ -97,6 +107,40 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
 
     topic_map = kafka_config_dict["topic_map"]
 
+    # Limit batch size for database writes
+    DB_BATCH_SIZE = 2000
+    
+    # Buffers for batch processing
+    channels_batch = []
+    channels_payloads = []
+    
+    videos_batch = []
+    videos_payloads = []
+    
+    comments_batch = []
+    comments_payloads = []
+    
+    def flush_channels():
+        if channels_batch:
+            print(f"Flushing {len(channels_batch)} channels to DB...")
+            dao.save_channels(channels_batch, channels_payloads)
+            channels_batch.clear()
+            channels_payloads.clear()
+
+    def flush_videos():
+        if videos_batch:
+            print(f"Flushing {len(videos_batch)} videos to DB...")
+            dao.save_videos(videos_batch, videos_payloads)
+            videos_batch.clear()
+            videos_payloads.clear()
+
+    def flush_comments():
+        if comments_batch:
+            print(f"Flushing {len(comments_batch)} comments to DB...")
+            dao.save_comments(comments_batch, comments_payloads)
+            comments_batch.clear()
+            comments_payloads.clear()
+
     for row in iterator:
         try:
             topic = row.topic
@@ -115,7 +159,6 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
             saved_id = None
             
             # Map based on topic/entityType
-            # Note: topic here is the raw topic name
             if "channels" in topic:
                 dto = ChannelDTO(
                     id=raw_payload["id"],
@@ -129,8 +172,12 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
                     view_count=raw_payload["view_count"],
                     country=raw_payload["country"],
                 )
-                dao.save_channel(dto, raw_payload=raw_payload)
+                channels_batch.append(dto)
+                channels_payloads.append(raw_payload)
                 saved_id = dto.id
+                
+                if len(channels_batch) >= DB_BATCH_SIZE:
+                    flush_channels()
                 
             elif "videos" in topic:
                 dto = VideoDTO(
@@ -147,8 +194,12 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
                     tags=tuple(raw_payload["tags"]),
                     category_id=raw_payload["category_id"],
                 )
-                dao.save_video(dto, raw_payload=raw_payload)
+                videos_batch.append(dto)
+                videos_payloads.append(raw_payload)
                 saved_id = dto.id
+                
+                if len(videos_batch) >= DB_BATCH_SIZE:
+                    flush_videos()
                 
             elif "comments" in topic:
                 dto = CommentDTO(
@@ -163,19 +214,35 @@ def process_partition(iterator, db_config_dict, kafka_config_dict):
                     parent_id=raw_payload["parent_id"],
                     reply_count=raw_payload["reply_count"],
                 )
-                dao.save_comment(dto, raw_payload=raw_payload)
+                comments_batch.append(dto)
+                comments_payloads.append(raw_payload)
                 saved_id = dto.id
+                
+                if len(comments_batch) >= DB_BATCH_SIZE:
+                    flush_comments()
 
-            # Produce to downstream topic
+            # Produce to downstream topic immediately
+            # Note: If DB save later fails, we might have produced messages that aren't in DB yet.
+            # In a strict transaction model, we might buffer these too, but for this use case,
+            # downstream processing usually can happen in parallel or we accept eventual consistency.
             if producer and output_topic and saved_id:
                 producer.send(
                     topic=output_topic,
                     key=saved_id,
-                    value=json.loads(payload_str) # Send original payload
+                    value=json.loads(payload_str) 
                 )
                 
         except Exception as e:
             print(f"Error processing row: {e}")
+
+    # Flush remaining items
+    try:
+        flush_channels()
+        flush_videos()
+        flush_comments()
+    except Exception as e:
+         print(f"Error flushing remaining batches: {e}")
+         raise e
 
     if producer:
         try:
@@ -233,6 +300,28 @@ def run_spark_consumer():
         kafka_cfg = KafkaConfig.from_env()
         # Capture DB config eagerly on driver to pass to workers
         db_config_dict = get_db_config_dict()
+
+        # Initialize DB Schema on Driver (create tables/fix PKs if needed)
+        print("Initializing Database Schema on Driver...")
+        try:
+            # Re-use the config dict we just created
+            class DriverConfig:
+                def __init__(self, d):
+                    self.user = d["user"]
+                    self.password = d["password"]
+                    self.host = d["host"]
+                    self.port = d["port"]
+                    self.database = d["database"]
+                @property
+                def connection_string(self):
+                    return f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+
+            driver_dao = YouTubeDAO(DriverConfig(db_config_dict))
+            driver_dao.init_db()
+            print("Database Schema Verified/Initialized.")
+        except Exception as e:
+            print(f"Warning: DB Initialization on driver failed: {e}")
+            # We continue, as it might just be connection issue, hoping workers are fine or schema exists
         
         # Ensure topics exist
         ensure_topics_exist(kafka_cfg)

@@ -12,10 +12,11 @@
 **/*.venv*/**
 
 # Ignore environment variables
-# .env
 *.bak
 logs
 .env
+.env.*
+!.env.example
 
 # Ignore markdown files
 *.md

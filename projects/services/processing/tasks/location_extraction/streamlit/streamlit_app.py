@@ -52,16 +52,20 @@ if IMPORT_ERROR_MSG:
 # Database Initialization
 # ------------------------
 def initialize_database():
+    """Initialize database tables if they don't exist (auto-init via DAO)."""
     if not BACKEND_AVAILABLE:
         return
     try:
         db_config = DatabaseConfig.from_env()
-        engine = create_engine(db_config.connection_string)
-        Base.metadata.create_all(engine)
+        # DAO auto-initializes tables when created (auto_init=True by default)
+        dao = LocationExtractionDAO(db_config)
+        st.session_state['_db_initialized'] = True
     except Exception as e:
         st.warning(f"⚠️ Could not initialize database tables: {e}")
 
-initialize_database()
+# Only initialize once
+if '_db_initialized' not in st.session_state:
+    initialize_database()
 
 # ------------------------
 # Backend Initialization

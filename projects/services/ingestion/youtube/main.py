@@ -127,6 +127,190 @@ async def run_full_ingestion(config: IngestionConfig, channel_id: str):
         producer.disconnect()
 
 
+async def run_smart_ingestion(config: IngestionConfig, channel_id: str):
+    """
+    Run smart ingestion for a single channel.
+    
+    Smart mode:
+    - First run: fetches ALL videos (full history)
+    - Subsequent runs: only fetches NEW videos (stops when hitting existing)
+    
+    This is more efficient than full mode for regular updates.
+    """
+    dao = YouTubeDAO(config.database)
+    dao.init_db()
+    
+    api_manager = YouTubeAPIManager(config, dao)
+    
+    producer = YouTubeKafkaProducer(config.kafka)
+    producer.create_topics()
+    producer.connect()
+    
+    logger.info(f"Running smart ingestion for channel: {channel_id}")
+    
+    try:
+        result = await api_manager.ingest_channel_smart(channel_id)
+        logger.info(f"Smart ingestion complete: {result}")
+        
+        # Produce events to Kafka for new videos only
+        if result["new_videos_count"] > 0:
+            # Get the channel for producing
+            resolved_channel_id = result["channel_id"]
+            channel = dao.get_channel(resolved_channel_id)
+            if channel:
+                producer.produce_channel_event(channel)
+            
+            # Get only the most recent videos (the ones we just added)
+            videos = dao.get_channel_videos(resolved_channel_id, limit=result["new_videos_count"])
+            for video in videos:
+                producer.produce_video_event(video)
+            
+            producer.flush()
+            logger.info(f"Published {len(videos)} new video events to Kafka")
+        else:
+            logger.info("No new videos to publish")
+        
+    finally:
+        producer.disconnect()
+    
+    return result
+
+
+async def run_smart_ingestion_resumable(config: IngestionConfig, channel_id: str):
+    """
+    Run smart ingestion with checkpoint support.
+    
+    If rate limited, progress is saved to database and can be resumed.
+    """
+    from projects.services.ingestion.youtube.dto import RateLimitError
+    
+    dao = YouTubeDAO(config.database)
+    dao.init_db()
+    
+    api_manager = YouTubeAPIManager(config, dao)
+    
+    producer = YouTubeKafkaProducer(config.kafka)
+    producer.create_topics()
+    producer.connect()
+    
+    logger.info(f"Running smart resumable ingestion for channel: {channel_id}")
+    
+    try:
+        result = await api_manager.ingest_channel_smart_resumable(channel_id)
+        logger.info(f"Smart resumable ingestion complete: {result}")
+        
+        # Produce events to Kafka for new videos only
+        if result["new_videos_count"] > 0:
+            resolved_channel_id = result["channel_id"]
+            channel = dao.get_channel(resolved_channel_id)
+            if channel:
+                producer.produce_channel_event(channel)
+            
+            videos = dao.get_channel_videos(resolved_channel_id, limit=result["new_videos_count"])
+            for video in videos:
+                producer.produce_video_event(video)
+            
+            producer.flush()
+            logger.info(f"Published {len(videos)} new video events to Kafka")
+        else:
+            logger.info("No new videos to publish")
+        
+        return result
+        
+    except RateLimitError as e:
+        logger.error(f"Rate limited! Progress saved to checkpoint.")
+        logger.error(f"  Checkpoint ID: {e.checkpoint.id if e.checkpoint else 'N/A'}")
+        logger.error(f"  Fetched so far: {e.checkpoint.fetched_count if e.checkpoint else 0}")
+        logger.error(f"  Retry after: {e.retry_after}s" if e.retry_after else "  Retry after: unknown")
+        logger.info("Run again with --mode=resume to continue from checkpoint")
+        raise
+        
+    finally:
+        producer.disconnect()
+
+
+async def resume_checkpoints(config: IngestionConfig):
+    """Resume all rate-limited checkpoints that are ready to retry."""
+    from projects.services.ingestion.youtube.dto import RateLimitError
+    
+    dao = YouTubeDAO(config.database)
+    dao.init_db()
+    
+    api_manager = YouTubeAPIManager(config, dao)
+    
+    producer = YouTubeKafkaProducer(config.kafka)
+    producer.create_topics()
+    producer.connect()
+    
+    logger.info("Checking for rate-limited checkpoints to resume...")
+    
+    try:
+        results = await api_manager.resume_rate_limited_checkpoints()
+        
+        if not results:
+            logger.info("No checkpoints to resume")
+            return
+        
+        logger.info(f"Resumed {len(results)} checkpoints")
+        
+        # Produce events for all resumed channels
+        for result in results:
+            if result.get("new_videos_count", 0) > 0:
+                channel_id = result["channel_id"]
+                channel = dao.get_channel(channel_id)
+                if channel:
+                    producer.produce_channel_event(channel)
+                
+                videos = dao.get_channel_videos(channel_id, limit=result["new_videos_count"])
+                for video in videos:
+                    producer.produce_video_event(video)
+        
+        producer.flush()
+        logger.info("Published events for resumed checkpoints")
+        
+    except RateLimitError as e:
+        logger.error(f"Still rate limited during resume: {e}")
+        
+    finally:
+        producer.disconnect()
+
+
+async def show_checkpoints(config: IngestionConfig):
+    """Show all active checkpoints (for debugging)."""
+    dao = YouTubeDAO(config.database)
+    dao.init_db()
+    
+    # Get rate limited checkpoints
+    checkpoints = dao.get_rate_limited_checkpoints()
+    
+    if not checkpoints:
+        logger.info("No active checkpoints found")
+        return
+    
+    logger.info(f"Found {len(checkpoints)} active checkpoints:")
+    for cp in checkpoints:
+        logger.info(
+            f"  [{cp.id}] Channel: {cp.channel_id}, "
+            f"Operation: {cp.operation_type}, "
+            f"Status: {cp.status}, "
+            f"Fetched: {cp.fetched_count}/{cp.target_count or '?'}, "
+            f"Retries: {cp.retry_count}, "
+            f"Reset at: {cp.rate_limit_reset_at}"
+        )
+
+
+async def run_consumer(config: IngestionConfig, run_once: bool = False, timeout_s: int = 60):
+    """
+    Run Kafka consumer to process YouTube events and save to database.
+    
+    Args:
+        config: Ingestion configuration
+        run_once: If True, runs for timeout_s seconds then stops
+        timeout_s: Timeout in seconds for run_once mode
+    """
+    dao = YouTubeDAO(config.database)
+    dao.init_db()
+
     async def handle_channel(event):
         """Handle channel event from Kafka."""
         try:
@@ -393,18 +577,31 @@ def main():
     parser = argparse.ArgumentParser(description="YouTube Ingestion Worker")
     parser.add_argument(
         "--mode",
-        choices=["realtime", "scheduled", "full", "consumer", "register", "init-db", "init-kafka", "smart"],
+        choices=[
+            "realtime", "scheduled", "full", "smart", "smart-single", "smart-resumable",
+            "resume", "checkpoints", "consumer", "register", "init-db", "init-kafka"
+        ],
         required=True,
-        help="Ingestion mode",
+        help="""Ingestion mode:
+            - full: Fetch all videos for a channel (always fetches all)
+            - smart-single: Smart fetch for one channel (all on first, then incremental)
+            - smart-resumable: Smart fetch with checkpoint support (can resume after rate limit)
+            - smart: DB-driven loop for all tracked channels
+            - resume: Resume all rate-limited checkpoints
+            - checkpoints: Show active checkpoints (for debugging)
+            - realtime/scheduled: Legacy polling modes
+            - consumer: Kafka consumer mode
+            - register: Register a channel for tracking
+            - init-db/init-kafka: Initialize database/kafka""",
     )
     parser.add_argument(
         "--channel",
-        help="Channel ID (required for full and register modes)",
+        help="Channel ID or handle (required for full, smart-single, smart-resumable, and register modes)",
     )
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
+        default=5,
         help="Polling interval in seconds (for realtime) or minutes (for scheduled/smart)",
     )
     parser.add_argument(
@@ -421,7 +618,7 @@ def main():
         logger.error(f"Configuration error: {e}")
         sys.exit(1)
     
-    if args.mode in ["full", "register"] and not args.channel:
+    if args.mode in ["full", "smart-single", "smart-resumable", "register"] and not args.channel:
         logger.error(f"--channel is required for {args.mode} mode")
         sys.exit(1)
     
@@ -434,6 +631,14 @@ def main():
              # Default to 5 minutes if interval is too small (likely passed as seconds by mistake)
             interval = args.interval if args.interval > 10 else 5
             asyncio.run(run_db_driven_ingestion(config, interval, run_once=args.run_once))
+        elif args.mode == "smart-single":
+            asyncio.run(run_smart_ingestion(config, args.channel))
+        elif args.mode == "smart-resumable":
+            asyncio.run(run_smart_ingestion_resumable(config, args.channel))
+        elif args.mode == "resume":
+            asyncio.run(resume_checkpoints(config))
+        elif args.mode == "checkpoints":
+            asyncio.run(show_checkpoints(config))
         elif args.mode == "full":
             asyncio.run(run_full_ingestion(config, args.channel))
         elif args.mode == "consumer":

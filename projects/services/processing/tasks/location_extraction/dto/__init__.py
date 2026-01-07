@@ -11,6 +11,7 @@ from .location_result import (
     LocationType,
     ExtractorType
 )
+from .persistence import PersistenceLocationDTO
 
 __all__ = [
     "UnifiedTextEvent",
@@ -19,5 +20,6 @@ __all__ = [
     "ExtractionMeta",
     "LocationExtractionResult",
     "LocationType",
-    "ExtractorType"
+    "ExtractorType",
+    "PersistenceLocationDTO"
 ]

@@ -1,5 +1,20 @@
 import sys
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Add the project root to python path to allow absolute imports of the framework
+# File location: projects/services/ingestion/youtube/web/streamlit/streamlit_app.py
+# Hierarchy: streamlit -> web -> youtube -> ingestion -> services -> projects -> airflow
+# Path(__file__).parents[6] should be 'airflow' root
+project_root = Path(__file__).resolve().parents[6]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+# Load environment variables explicitly from project root
+dotenv_path = project_root / ".env"
+load_dotenv(dotenv_path)
+
 import asyncio
 import streamlit as st
 import pandas as pd
@@ -17,14 +32,6 @@ st.set_page_config(
     page_icon="📺",
     layout="wide"
 )
-
-# Add the project root to python path to allow absolute imports of the framework
-# File location: projects/services/ingestion/youtube/web/streamlit/streamlit_app.py
-# Hierarchy: streamlit -> web -> youtube -> ingestion -> services -> projects -> airflow
-# Path(__file__).parents[6] should be 'airflow' root
-project_root = Path(__file__).resolve().parents[6]
-if str(project_root) not in sys.path:
-    sys.path.append(str(project_root))
 
 # Import backend services
 BACKEND_AVAILABLE = False
@@ -47,25 +54,38 @@ if IMPORT_ERROR_MSG:
 # ------------------------
 # Database Configuration
 # ------------------------
+
 DB_CONFIG = {
-    "user": "airflow",
-    "password": "airflow",
-    "host": "postgres",  # Use 'localhost' for local development
-    "port": 5432,
-    "database": "airflow"
+    "user": os.getenv("DB_USER", "airflow"),
+    "password": os.getenv("DB_PASSWORD", "airflow"),
+    "host": os.getenv("DB_HOST", "postgres"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "database": os.getenv("DB_NAME", "airflow")
 }
 
+# Display connection info in sidebar
+with st.sidebar:
+    st.header("🔌 Connection Info")
+    st.info(f"**Host:** `{DB_CONFIG['host']}`\n\n**Database:** `{DB_CONFIG['database']}`")
+
+import time
+
+@st.cache_resource
 def get_engine():
     """Create SQLAlchemy engine."""
     return create_engine(
         f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
-        f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+        f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}",
+        pool_pre_ping=True
     )
+    #     f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
+    #     f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+    # )
 
+@st.cache_resource
 def initialize_database():
     """
     Initialize database tables if they don't exist.
-
     
     This is called once per app session to ensure all required tables
     (youtube_channels, youtube_videos, youtube_comments, youtube_tracked_channels)
@@ -75,8 +95,11 @@ def initialize_database():
         return  # Skip if backend imports failed
     
     try:
-        engine = get_engine()
-        Base.metadata.create_all(engine)
+        # Use DAO to initialize DB, which includes schema integrity checks
+        # Use simple DB_CONFIG to match what get_engine() uses
+        db_config = DatabaseConfig(**DB_CONFIG)
+        dao = YouTubeDAO(db_config)
+        dao.init_db()
     except Exception as e:
         # Log but don't crash - tables may already exist or DB may be temporarily unavailable
         st.warning(f"⚠️ Could not initialize database tables: {e}")
@@ -253,10 +276,15 @@ def get_dao():
             st.error("❌ Backend services not found. Please check your python path.")
             return None
             
-        # Initialize configs
+        # Initialize DAO using application configuration
         try:
-            db_config = DatabaseConfig.from_env()
-        except ValueError as e:
+            # We use the hardcoded/local DB_CONFIG to ensure consistency
+            # Unpack the dictionary to create a DatabaseConfig object
+            db_config = DatabaseConfig(**DB_CONFIG)
+            
+            # Optional: Log used config (safely)
+            st.info(f"✅ Database config loaded: {db_config}")
+        except Exception as e:
             st.error(f"❌ Configuration error: {e}")
             return None
             
@@ -278,13 +306,29 @@ def handle_add_channel(dao: 'YouTubeDAO', channel_id: str):
 
     with st.spinner(f"Adding channel {channel_id}..."):
         try:
-            # Only register in DB, let the background workers handle ingestion
+            # 1. Register in DB
             dao.register_tracked_channel(channel_id)
-            st.success(f"✅ Channel {channel_id} added and tracked successfully! Data will appear after ingestion.")
-            # Invalidate caches to refresh data
-            load_tracking_statistics.clear()
-            load_tracked_channels.clear()
-            load_all_channels.clear()
+            
+            # 2. Verify it was added
+            # Note: register_tracked_channel adds to both youtube_channels and youtube_tracked_channels
+            import time
+            time.sleep(0.5) # Slight delay for consistency
+            
+            # Check if tracked
+            tracked_list = dao.get_tracked_channels(active_only=True)
+            is_found = any(t.channel_id == channel_id for t in tracked_list)
+            
+            if is_found:
+                st.success(f"✅ Channel {channel_id} successfully added to database!")
+                st.info("Ingestion service will pick this up shortly to fetch details.")
+                
+                # Invalidate caches to refresh data
+                load_tracking_statistics.clear()
+                load_tracked_channels.clear()
+                load_all_channels.clear()
+            else:
+                st.error(f"❌ Channel {channel_id} was submitted but could not be verified in database. Check logs.")
+                
         except Exception as e:
             st.error(f"❌ Failed to add channel: {e}")
 
@@ -327,11 +371,15 @@ def render_dashboard():
     st.divider()
     
     # ------------------------
-    # Tabs for different views
+    # Navigation mechanism for Lazy Loading
     # ------------------------
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Tracked Channels", "🎬 Recent Videos", "💬 Recent Comments", "📋 All Channels", "⚙️ Manage Channels"])
+    # Replaces st.tabs with st.radio to only load data for the active view
+    view_options = ["🎯 Tracked Channels", "🎬 Recent Videos", "💬 Recent Comments", "📋 All Channels", "⚙️ Manage Channels"]
+    selected_view = st.radio("View", options=view_options, horizontal=True, label_visibility="collapsed")
     
-    with tab1:
+    st.divider()
+
+    if selected_view == "🎯 Tracked Channels":
         st.subheader("🎯 Tracked Channels")
         
         tracked_df = load_tracked_channels()
@@ -371,7 +419,7 @@ def render_dashboard():
                     
                     st.divider()
     
-    with tab2:
+    elif selected_view == "🎬 Recent Videos":
         st.subheader("🎬 Recent Videos")
         
         # Move slider outside fragment if we want it to NOT reset, however inside fragment it persists if key is stable.
@@ -399,9 +447,9 @@ def render_dashboard():
             # Display as table
             display_df = videos_df[["title", "channel_title", "view_count", "like_count", "comment_count", "published_at"]].copy()
             display_df.columns = ["Title", "Channel", "Views", "Likes", "Comments", "Published"]
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df)
     
-    with tab3:
+    elif selected_view == "💬 Recent Comments":
         st.subheader("💬 Recent Comments")
         
         comment_limit = st.slider("Number of comments to display", 10, 100, 50, key="comment_limit")
@@ -428,7 +476,7 @@ def render_dashboard():
                     
                     st.divider()
     
-    with tab4:
+    elif selected_view == "📋 All Channels":
         st.subheader("📋 All Channels")
         
         all_channels_df = load_all_channels()
@@ -453,8 +501,12 @@ def render_dashboard():
             
             # Display as table
             display_df = filtered_df[["title", "subscriber_count", "video_count", "view_count", "country", "is_tracked"]].copy()
+            # Ensure numeric columns are properly typed to avoid Streamlit TypeError
+            display_df["subscriber_count"] = pd.to_numeric(display_df["subscriber_count"], errors='coerce').fillna(0).astype(int)
+            display_df["video_count"] = pd.to_numeric(display_df["video_count"], errors='coerce').fillna(0).astype(int)
+            display_df["view_count"] = pd.to_numeric(display_df["view_count"], errors='coerce').fillna(0).astype(int)
             display_df.columns = ["Title", "Subscribers", "Videos", "Views", "Country", "Tracked"]
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df)
             
             # Visualization: Subscriber distribution
             if len(filtered_df) > 1:
@@ -466,7 +518,7 @@ def render_dashboard():
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-    with tab5:
+    elif selected_view == "⚙️ Manage Channels":
         st.subheader("⚙️ Manage Channels")
         
         dao = get_dao()
@@ -483,6 +535,8 @@ def render_dashboard():
             st.divider()
             
             st.markdown("#### Remove Tracked Channel")
+            # For this view, we may want to load tracked channels again or reuse what we have. 
+            # Since this is a management view, fresh data is better.
             tracked_active_df = load_tracked_channels()
             if tracked_active_df.empty:
                  st.info("No tracked channels to remove.")
@@ -509,3 +563,35 @@ st.markdown("Real-time monitoring of YouTube channel tracking and scraped data."
 
 # Render the dashboard fragment
 render_dashboard()
+
+# # ------------------------
+# # Diagnostics
+# # ------------------------
+# with st.expander("🔌 Network & Database Diagnostics"):
+#     if st.button("Run Latency Test"):
+#         engine = get_engine()
+        
+#         # Test 1: Connection Latency
+#         start_time = time.time()
+#         try:
+#             conn = engine.raw_connection()
+#             connect_time = (time.time() - start_time) * 1000
+#             st.success(f"✅ Connection Time: {connect_time:.2f} ms")
+            
+#             # Test 2: Query Latency
+#             start_time = time.time()
+#             cursor = conn.cursor()
+#             cursor.execute("SELECT 1")
+#             cursor.fetchone()
+#             query_time = (time.time() - start_time) * 1000
+#             st.success(f"✅ Query Time (SELECT 1): {query_time:.2f} ms")
+            
+#             conn.close()
+            
+#             if connect_time < 10 and query_time < 10:
+#                 st.info("🚀 Performance is excellent! Connection pooling is working.")
+#             elif connect_time > 100:
+#                 st.warning("⚠️ High connection latency detected. Check Docker networking.")
+                
+#         except Exception as e:
+#             st.error(f"❌ Connection failed: {e}")

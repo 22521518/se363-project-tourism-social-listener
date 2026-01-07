@@ -2,6 +2,10 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables explicitly
+load_dotenv()
 
 # Define paths
 # Note: In standard Airflow Docker, dags are in /opt/airflow/dags.
@@ -13,7 +17,7 @@ import os
 # If running locally or in specific setup, using absolute path might be safer or ENV var.
 # We will use a dynamically resolved path assuming the standard 'airflow' directory structure.
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
-PRODUCER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/run_youtube_service.sh")
+PRODUCER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/run_full_ingestion.sh")
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/setup_venv.sh")
 VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/.venv_unified")
@@ -44,16 +48,20 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
 
-    # Task 1: Smart Producer
-    # Scrapes pending channels and checks for updates, producing events to Kafka
+    # Task 1: Full History Producer
+    # Scrapes all data (videos/comments) for tracked channels
     run_producer = BashOperator(
         task_id='run_producer',
-        bash_command=f"bash {PRODUCER_SCRIPT} --mode smart", # --run-once"
+        bash_command=f"bash {PRODUCER_SCRIPT} ",
         env={
             **os.environ, 
             "VENV_DIR": VENV_PATH,
-            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
-            "DB_HOST": "postgres"
+            "KAFKA_BOOTSTRAP_SERVERS": os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
+            "DB_HOST": os.environ.get("DB_HOST", "localhost"),
+            "DB_PORT": os.environ.get("DB_PORT", "5432"),
+            "DB_NAME": os.environ.get("DB_NAME", "airflow"),
+            "DB_USER": os.environ.get("DB_USER", "airflow"),
+            "DB_PASSWORD": os.environ.get("DB_PASSWORD", "airflow"),
         },
     )
 

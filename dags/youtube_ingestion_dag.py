@@ -2,6 +2,10 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables explicitly
+load_dotenv()
 
 # Define paths
 # Note: In standard Airflow Docker, dags are in /opt/airflow/dags.
@@ -52,8 +56,12 @@ with DAG(
         env={
             **os.environ, 
             "VENV_DIR": VENV_PATH,
-            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
-            "DB_HOST": "postgres"
+            "KAFKA_BOOTSTRAP_SERVERS": os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
+            "DB_HOST": os.environ.get("DB_HOST", "localhost"),
+            "DB_PORT": os.environ.get("DB_PORT", "5432"),
+            "DB_NAME": os.environ.get("DB_NAME", "airflow"),
+            "DB_USER": os.environ.get("DB_USER", "airflow"),
+            "DB_PASSWORD": os.environ.get("DB_PASSWORD", "airflow"),
         },
     )
 
