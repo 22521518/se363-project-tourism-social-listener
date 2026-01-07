@@ -63,7 +63,7 @@ with DAG(
     # Task 2: Produce Unprocessed Comments to Kafka
     run_producer = BashOperator(
         task_id='produce_to_kafka',
-        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 1000",
+        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 3000",
         env=COMMON_ENV,
     )
 

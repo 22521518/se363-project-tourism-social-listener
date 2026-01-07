@@ -68,7 +68,9 @@ class ModelConfig:
     openai_api_key:str
     model_name: str
     batch_size: int
-    max_tokens: int 
+    max_tokens: int
+    extractor_backend: str
+    model_path: str
     
     @classmethod
     def from_env(cls) -> "ModelConfig":
@@ -77,7 +79,9 @@ class ModelConfig:
             openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
             batch_size=int(os.getenv("BATCH_SIZE", 30)),
-            max_tokens=int(os.getenv("MAX_TOKENS", 2000))
+            max_tokens=int(os.getenv("MAX_TOKENS", 2000)),
+            extractor_backend=os.getenv("INTENTION_EXTRACTOR_BACKEND", "transformer"),
+            model_path=os.getenv("INTENTION_MODEL_PATH", "/opt/airflow/projects/data/models/intentions_classifier/")
         )
 
 
