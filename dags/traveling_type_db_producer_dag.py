@@ -17,10 +17,7 @@ PRODUCER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/scripts/setup_venv.sh")
 VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/traveling_type/.venv")
-INIT_DB_SCRIPT = os.path.join(
-    AIRFLOW_HOME,
-    "projects/services/processing/tasks/traveling_type/init_db.py"
-)
+
 
 # Shared environment variables for all tasks
 COMMON_ENV = {
@@ -30,10 +27,9 @@ COMMON_ENV = {
     "KAFKA_TOPIC": "youtube-comments",
     "DB_HOST": "postgres",
     "DB_PORT": "5432",
-    "DB_NAME": "your_db_name",  # Update this
-    "DB_USER": "your_db_user",  # Update this
-    "DB_PASSWORD": "your_db_password",  # Update this
-    "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),  # For LLM
+    "DB_NAME": "airflow",
+    "DB_USER": "airflow",
+    "DB_PASSWORD": "airflow",
 }
 
 default_args = {
@@ -62,20 +58,15 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
     
-    # Task 1: Initialize Database Tables
-    init_database = BashOperator(
-        task_id='initialize_database',
-        bash_command=f"source {VENV_PATH}/bin/activate && python {INIT_DB_SCRIPT}",
-        env=COMMON_ENV,
-    )
+  
 
     # Task 2: Produce Unprocessed Comments to Kafka
     run_producer = BashOperator(
         task_id='produce_to_kafka',
-        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 10000",
+        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 1000",
         env=COMMON_ENV,
     )
 
     # Execution Flow
     # Setup -> [Producer]
-    setup_env >> init_database >> run_producer 
+    setup_env >> run_producer 

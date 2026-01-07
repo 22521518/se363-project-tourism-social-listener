@@ -16,10 +16,10 @@ class KafkaConfig():
     bootstrap_servers: str
     client_id: str
     topic: str
-    unprocessed_topic: str = "intention.unprocessed"
     group_id: str
     max_offsets_per_trigger: int
     processing_time: str
+    unprocessed_topic: str = "intention.unprocessed"
     
     @classmethod
     def from_env(cls) -> "KafkaConfig":
@@ -28,9 +28,9 @@ class KafkaConfig():
             bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
             topic=os.getenv("KAFKA_TOPIC", "youtube.comments"),
             unprocessed_topic=os.getenv("KAFKA_UNPROCESSED_TOPIC", "intention.unprocessed"),
-            client_id=os.getenv("KAFKA_CLIENT_ID", "intetion_extraction"),
+            client_id=os.getenv("KAFKA_CLIENT_ID", "intention_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "intention-extraction-group"),
-            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "10")),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "30")),
             processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
@@ -76,8 +76,8 @@ class ModelConfig:
         return cls(
             openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
-            batch_size=int(os.getenv("BATCH_SIZE", 10)),
-            max_tokens=int(os.getenv("MAX_TOKENS", 1024))
+            batch_size=int(os.getenv("BATCH_SIZE", 30)),
+            max_tokens=int(os.getenv("MAX_TOKENS", 2000))
         )
 
 

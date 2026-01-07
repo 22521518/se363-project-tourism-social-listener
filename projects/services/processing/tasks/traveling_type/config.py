@@ -15,11 +15,11 @@ class KafkaConfig():
     """Kafka configuration."""
     bootstrap_servers: str
     client_id: str
-    unprocessed_topic: str = "traveling_type.unprocessed"
     topic: str
     group_id: str
     max_offsets_per_trigger: int
     processing_time: str
+    unprocessed_topic: str = "traveling_type.unprocessed"
   
     
     @classmethod
@@ -31,7 +31,7 @@ class KafkaConfig():
             unprocessed_topic=os.getenv("KAFKA_UNPROCESSED_TOPIC", "traveling_type.unprocessed"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "traveling_type_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "traveling-type-extraction-group"),
-            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "10")),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "30")),
             processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
@@ -77,8 +77,8 @@ class ModelConfig:
         return cls(
             openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
-            batch_size=int(os.getenv("BATCH_SIZE", 10)),
-            max_tokens=int(os.getenv("MAX_TOKENS", 1024))
+            batch_size=int(os.getenv("BATCH_SIZE", 30)),
+            max_tokens=int(os.getenv("MAX_TOKENS", 2000))
         )
 
 

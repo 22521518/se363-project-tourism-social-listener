@@ -163,6 +163,13 @@ def run_spark_consumer():
         
         # Ensure topics exist
         ensure_topics_exist(consumer_cfg.kafka)
+        # Initialize DAO and tables
+        dao = IntentionDAO(consumer_cfg.database)
+        try:
+            dao.init_db()
+            print("Database tables initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Could not initialize database tables: {e}")
     except Exception as e:
         print(f"Failed to load config: {e}")
         return
