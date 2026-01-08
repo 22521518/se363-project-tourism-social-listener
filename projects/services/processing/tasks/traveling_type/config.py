@@ -31,7 +31,7 @@ class KafkaConfig():
             unprocessed_topic=os.getenv("KAFKA_UNPROCESSED_TOPIC", "traveling_type.unprocessed"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "traveling_type_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "traveling-type-extraction-group"),
-            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "30")),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "50")),
             processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
@@ -69,7 +69,9 @@ class ModelConfig:
     openai_api_key:str
     model_name: str
     batch_size: int
-    max_tokens: int 
+    max_tokens: int
+    extractor_backend: str
+    model_path: str
     
     @classmethod
     def from_env(cls) -> "ModelConfig":
@@ -78,7 +80,9 @@ class ModelConfig:
             openai_api_key= os.getenv("OPENAI_API_KEY"),
             model_name=os.getenv("MODEL_NAME", "gpt-4o-mini"),
             batch_size=int(os.getenv("BATCH_SIZE", 30)),
-            max_tokens=int(os.getenv("MAX_TOKENS", 2000))
+            max_tokens=int(os.getenv("MAX_TOKENS", 2000)),
+            extractor_backend=os.getenv("TRAVELING_TYPE_EXTRACTOR_BACKEND", "transformer"),
+            model_path=os.getenv("TRAVELING_TYPE_MODEL_PATH", "/opt/airflow/projects/data/models/traveling_type_classifier")
         )
 
 

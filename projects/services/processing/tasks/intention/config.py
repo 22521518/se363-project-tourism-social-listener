@@ -30,7 +30,7 @@ class KafkaConfig():
             unprocessed_topic=os.getenv("KAFKA_UNPROCESSED_TOPIC", "intention.unprocessed"),
             client_id=os.getenv("KAFKA_CLIENT_ID", "intention_extraction"),
             group_id=os.getenv("KAFKA_GROUP_ID", "intention-extraction-group"),
-            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "30")),
+            max_offsets_per_trigger=int(os.getenv("KAFKA_MAX_OFFSETS_PER_TRIGGER", "50")),
             processing_time=os.getenv("KAFKA_PROCESSING_TIME", "1 minute")
         )
 
@@ -81,7 +81,7 @@ class ModelConfig:
             batch_size=int(os.getenv("BATCH_SIZE", 30)),
             max_tokens=int(os.getenv("MAX_TOKENS", 2000)),
             extractor_backend=os.getenv("INTENTION_EXTRACTOR_BACKEND", "transformer"),
-            model_path=os.getenv("INTENTION_MODEL_PATH", "/opt/airflow/projects/data/models/intentions_classifier/")
+            model_path=os.getenv("INTENTION_MODEL_PATH", "/opt/airflow/projects/data/models/intention_classifier")
         )
 
 

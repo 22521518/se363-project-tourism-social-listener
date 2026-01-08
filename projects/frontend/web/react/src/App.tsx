@@ -1,57 +1,34 @@
-import { useState } from 'react';
-import { Header } from './components/Header';
-import { QuickStats } from './components/QuickStats';
-import { TourismClassification } from './components/TourismClassification';
-import { PostTypeAnalysis } from './components/PostTypeAnalysis';
-import { SemanticAnalysis } from './components/SemanticAnalysis';
-import { AdvancedFilters } from './components/AdvancedFilters';
-import { DetailedMentions } from './components/DetailedMentions';
-import { ItineraryTracker } from './components/ItineraryTracker';
+import { Navigate, Outlet, Route, Routes } from "react-router";
+import Dashboard from "./routes/Dashboard";
+import PostAnalysis from "./routes/PostAnalysis";
 
-export default function App() {
-  const [filters, setFilters] = useState({
-    tourismType: 'all',
-    // tourismOrg: 'all',
-    postIntention: 'all',
-    tourismGeo: 'all',
-    postType: 'all',
-    timeRange: '7d',
-    sentiment: 'all'
-  });
+import { Header } from "./components/Header";
+import { useState } from "react";
+import PostDetail from "./routes/PostDetail";
 
-  const [selectedView, setSelectedView] = useState<'overview' | 'posts' | 'itinerary'>('overview');
-
+const MainLayout = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header 
-        selectedView={selectedView}
-        setSelectedView={setSelectedView}
-      />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AdvancedFilters filters={filters} setFilters={setFilters} />
-        
-        {selectedView === 'overview' && (
-          <>
-            <QuickStats filters={filters} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <TourismClassification filters={filters} />
-              <PostTypeAnalysis filters={filters} />
-            </div>
-            
-            <SemanticAnalysis filters={filters} />
-          </>
-        )}
-        
-        {selectedView === 'posts' && (
-          <DetailedMentions filters={filters} />
-        )}
-        
-        {selectedView === 'itinerary' && (
-          <ItineraryTracker filters={filters} />
-        )}
-      </main>
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+      }}
+    >
+      <Header />
+      <Outlet />
     </div>
+  );
+};
+export default function App() {
+  return (
+    <Routes>
+      {/* redirect root to /dashboard */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route element={<MainLayout />}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="posts" element={<PostAnalysis />} />
+      </Route>
+      <Route path="posts/:id" element={<PostDetail />} />
+    </Routes>
   );
 }

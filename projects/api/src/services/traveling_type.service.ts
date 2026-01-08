@@ -12,7 +12,7 @@ export class TravelingTypeService {
    * Categories:
    */
   async getTravelingTypeStats(): Promise<TravelingTypeStats[]> {
-    const travelingTypes = await travelingTypeRepository.findAll(10000);
+    const travelingTypes = await travelingTypeRepository.findAll(50000);
 
     // Count by category
     const countByCategory = new Map<TravelingType, number>([

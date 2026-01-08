@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 try:
     from projects.services.processing.tasks.intention.extractor.extractor import create_intention_extractor
-    from projects.services.processing.tasks.intention.langchain.langchain import IntentionExtractionService
     from projects.services.processing.tasks.intention.config import ConsumerConfig
     from projects.services.processing.tasks.intention.dao import IntentionDAO
     from projects.services.processing.tasks.intention.dto import IntentionDTO, ModelIntentionDTO

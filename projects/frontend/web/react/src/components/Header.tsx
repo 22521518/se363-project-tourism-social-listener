@@ -1,14 +1,11 @@
-import { Radio, BarChart3, FileText, Route } from 'lucide-react';
+import { Radio, BarChart3, FileText, Route } from "lucide-react";
+import { Link, useLocation } from "react-router";
 
-interface HeaderProps {
-  selectedView: 'overview' | 'posts' | 'itinerary';
-  setSelectedView: (view: 'overview' | 'posts' | 'itinerary') => void;
-}
-
-export function Header({ selectedView, setSelectedView }: HeaderProps) {
+export function Header() {
+  const { pathname } = useLocation();
   const tabs = [
-    { id: 'overview' as const, label: 'Overview', icon: BarChart3 },
-    { id: 'posts' as const, label: 'Posts Analysis', icon: FileText },
+    { id: "dashboard" as const, label: "Overview", icon: BarChart3 },
+    { id: "posts" as const, label: "Posts Analysis", icon: FileText },
     // { id: 'itinerary' as const, label: 'Itinerary Tracker', icon: Route }
   ];
 
@@ -22,26 +19,29 @@ export function Header({ selectedView, setSelectedView }: HeaderProps) {
             </div>
             <div>
               <h1 className="text-gray-900">Tourism Social Listener</h1>
-              <p className="text-sm text-gray-500">Advanced tracking & analysis</p>
+              <p className="text-sm text-gray-500">
+                Advanced tracking & analysis
+              </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            {tabs.map(tab => {
+            {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedView(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    selectedView === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
+                <Link to={`/${tab.id}`}>
+                  <button
+                    key={tab.id}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      pathname === `/${tab.id}`
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                </Link>
               );
             })}
           </div>

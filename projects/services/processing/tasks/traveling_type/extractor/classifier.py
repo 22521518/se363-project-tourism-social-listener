@@ -8,12 +8,12 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Auto
 from typing import List, Tuple, Optional
 
 
-class IntentionClassifier:
-    """Classifier for intention types"""
+class TravelingTypeClassifier:
+    """Classifier for traveling type types"""
     
-    def __init__(self, model_path: str = "models/intention_classifier", device: Optional[str] = None):
+    def __init__(self, model_path: str = "models/traveling_type_classifier", device: Optional[str] = None):
         """
-        Initialize intention classifier with trained model.
+        Initialize traveling type classifier with trained model.
         
         Args:
             model_path: Path to the trained model directory
@@ -32,7 +32,7 @@ class IntentionClassifier:
             raise ValueError(f"config.json not found in {model_path}")
         
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Loading intention model from {model_path} on device: {self.device}")
+        print(f"Loading traveling type model from {model_path} on device: {self.device}")
         
         try:
             # Set environment variables to force offline mode
@@ -177,13 +177,13 @@ class IntentionClassifier:
 # Example usage
 if __name__ == "__main__":
     # Initialize classifier
-    intention_clf = IntentionClassifier()
+    traveling_type_clf = TravelingTypeClassifier()
     
     # Single prediction
     text = "How do I book a flight?"
-    intention, conf = intention_clf.predict(text)
+    traveling_type, conf = traveling_type_clf.predict(text)
     print(f"Text: {text}")
-    print(f"Intention: {intention} (confidence: {conf:.3f})\n")
+    print(f"Traveling Type: {traveling_type} (confidence: {conf:.3f})\n")
     
     # Batch prediction
     texts = [
@@ -193,6 +193,6 @@ if __name__ == "__main__":
     ]
     
     print("Batch predictions:")
-    results = intention_clf.predict_batch(texts)
+    results = traveling_type_clf.predict_batch(texts)
     for text, (label, conf) in zip(texts, results):
         print(f"  {text[:40]:40s} → {label:12s} ({conf:.3f})")

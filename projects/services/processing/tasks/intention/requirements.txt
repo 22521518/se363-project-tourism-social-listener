@@ -1,7 +1,8 @@
 # Core LangChain - you only need langchain and langchain-openai
 langchain>=0.3.0
 langchain-openai>=0.2.0
-
+torch>=2.0.0
+transformers>=4.30.0
 # Pydantic (required for LangChain v2)
 pydantic>=2.0.0,<3.0.0
 
@@ -16,6 +17,7 @@ kafka-python-ng
 
 # Utilities
 python-dotenv
+
 
 
 # Optional: For model quantization (smaller memory footprint)
