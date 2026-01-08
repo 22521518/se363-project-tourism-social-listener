@@ -18,8 +18,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from .config import DatabaseConfig
-from .models import create_intention_tables, Base
+from config import DatabaseConfig
+from models import create_intention_tables, Base
 from sqlalchemy import create_engine
 
 def main():

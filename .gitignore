@@ -18,6 +18,8 @@ logs
 .env.*
 !.env.example
 
+traveling_type_classifier/
+intention_classifier/
 # Ignore markdown files
 *.md
 !README.md

@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    from projects.services.processing.tasks.intention.langchain.langchain import IntentionExtractionService
+    from projects.services.processing.tasks.intention.extractor.extractor import create_intention_extractor
     from projects.services.processing.tasks.intention.config import ConsumerConfig
     from projects.services.processing.tasks.intention.dao import IntentionDAO
     from projects.services.processing.tasks.intention.dto import IntentionDTO, ModelIntentionDTO
@@ -124,30 +124,56 @@ def process_batch(batch_df, batch_id):
             f"[Batch {batch_id}] First sample text (truncated): "
             f"{items[0].text[:200]}"
         )
-        
-    # 3️⃣ ONE LLM CALL
-    service = IntentionExtractionService(model_config=consumer_cfg.model)
-    results = service.batch_extract_intentions(items)
+    backend = consumer_cfg.model.extractor_backend
+    model_path = consumer_cfg.model.model_path
+    print(f"[Batch {batch_id}] Using extractor backend: {backend}")
     
-    intention_dtos: list[IntentionDTO] = []
-    for dto, result in zip(items, results):
-       intention_dtos.append(IntentionDTO(
-            source_id=dto.source_id,
-            source_type=dto.source_type,
-            raw_text=dto.text,
-            intention_type=normalize_intention_type(
-                result.get("intention_type")
-            ),
-        ))
     try:
+        # Create appropriate extractor based on backend
+        if backend == "langchain":
+            extractor = create_intention_extractor(
+                backend="langchain",
+                model_config=consumer_cfg.model
+            )
+        elif backend == "transformer":
+            extractor = create_intention_extractor(
+                backend="transformer",
+                model_path=model_path
+            )
+        elif backend == "hybrid":
+            extractor = create_intention_extractor(
+                backend="hybrid",
+                model_config=consumer_cfg.model,
+                model_path=model_path,
+                confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
+            )
+        else:
+            raise ValueError(f"Unknown backend: {backend}")
+        
+        # Extract intentions - Single call for all items
+        results = extractor.batch_extract_intentions(items)
+        # Results format: [{"intention_type": "question"}, {"intention_type": "complaint"}, ...]
+        
+        # Convert to DTOs for saving
+        intention_dtos: list[IntentionDTO] = []
+        for dto, result in zip(items, results):
+            intention_dtos.append(IntentionDTO(
+                source_id=dto.source_id,
+                source_type=dto.source_type,
+                raw_text=dto.text,
+                intention_type=normalize_intention_type(
+                    result.get("intention_type")
+                ),
+            ))
+        
+        # Save to database
         dao.save_batch(intention_dtos)
-        print(
-            f"[Batch {batch_id}] Saved {len(intention_dtos)} intentions"
-        )
+        print(f"[Batch {batch_id}] Saved {len(intention_dtos)} intentions")
+        
     except Exception as e:
-        print(
-            f"[Batch {batch_id}] Failed while saving intentions: {e}"
-        )
+        print(f"[Batch {batch_id}] Failed while processing intentions: {e}")
+        import traceback
+        traceback.print_exc()
                  
 def run_spark_consumer():
     spark = SparkSession.builder \
@@ -163,6 +189,13 @@ def run_spark_consumer():
         
         # Ensure topics exist
         ensure_topics_exist(consumer_cfg.kafka)
+        # Initialize DAO and tables
+        dao = IntentionDAO(consumer_cfg.database)
+        try:
+            dao.init_db()
+            print("Database tables initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Could not initialize database tables: {e}")
     except Exception as e:
         print(f"Failed to load config: {e}")
         return

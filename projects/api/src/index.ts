@@ -6,6 +6,9 @@ import { locationRouter } from './controllers/location.controller';
 import { swaggerSpec } from './config/swagger';
 import { intentionRouter } from './controllers/intention.controller';
 import { travelingTypeRouter } from './controllers/traveling_type.controller';
+import { youtubeChannelRouter } from './controllers/youtube_channel.controller';
+import { youtubeVideoRouter } from './controllers/youtube_video.controller';
+import { youtubeCommentRouter } from './controllers/youtube_comment.controller';
 
 dotenv.config();
 
@@ -23,6 +26,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/locations', locationRouter);
 app.use('/api/intentions', intentionRouter);
 app.use('/api/traveling_types', travelingTypeRouter);
+app.use('/api/youtube_channels', youtubeChannelRouter);
+app.use('/api/youtube_videos', youtubeVideoRouter);
+app.use('/api/youtube_comments', youtubeCommentRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

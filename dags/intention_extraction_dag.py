@@ -16,10 +16,6 @@ AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/scripts/setup_venv.sh")
 VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/processing/tasks/intention/.venv")
-INIT_DB_SCRIPT = os.path.join(
-    AIRFLOW_HOME,
-    "projects/services/processing/tasks/intention/init_db.py"
-)
 
 # Shared environment variables for all tasks
 COMMON_ENV = {
@@ -29,10 +25,9 @@ COMMON_ENV = {
     "KAFKA_TOPIC": "youtube-comments",
     "DB_HOST": "postgres",
     "DB_PORT": "5432",
-    "DB_NAME": "your_db_name",  # Update this
-    "DB_USER": "your_db_user",  # Update this
-    "DB_PASSWORD": "your_db_password",  # Update this
-    "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),  # For LLM
+    "DB_NAME": "airflow",
+    "DB_USER": "airflow",
+    "DB_PASSWORD": "airflow",
 }
 
 default_args = {
@@ -61,12 +56,7 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
     
-    # Task 1: Initialize Database Tables
-    init_database = BashOperator(
-        task_id='initialize_database',
-        bash_command=f"source {VENV_PATH}/bin/activate && python {INIT_DB_SCRIPT}",
-        env=COMMON_ENV,
-    )
+
 
     # Task 2: Spark Consumer
     # Consumes events from Kafka and saves to Database using Spark
@@ -78,4 +68,4 @@ with DAG(
 
     # Execution Flow
     # Setup -> Consumer
-    setup_env >> init_database >> run_consumer
+    setup_env  >> run_consumer

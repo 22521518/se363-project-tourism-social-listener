@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 sys.path.append(os.getcwd())
 
 try:
-    from  projects.services.processing.tasks.traveling_type.langchain.langchain import TravelingTypeExtractionService
+    from  projects.services.processing.tasks.traveling_type.extractor.extractor import create_traveling_type_extractor
     from  projects.services.processing.tasks.traveling_type.config import ConsumerConfig
     from  projects.services.processing.tasks.traveling_type.dao import TravelingTypeDAO
     from  projects.services.processing.tasks.traveling_type.models import TravelingType
@@ -114,26 +114,56 @@ def process_batch(batch_df, batch_id):
             f"{items[0].text[:200]}"
         )
     # 3️⃣ ONE LLM CALL
-    service = TravelingTypeExtractionService(model_config=consumer_cfg.model)
-    results = service.batch_extract_traveling_types(items)
+    backend = consumer_cfg.model.extractor_backend
+    model_path = consumer_cfg.model.model_path
+    print(f"[Batch {batch_id}] Using extractor backend: {backend}")
     
-    traveling_type_dtos: list[TravelingTypeDTO] = []
-    for dto, result in zip(items, results):
-       traveling_type_dtos.append(TravelingTypeDTO(
-            source_id=dto.source_id,
-            source_type=dto.source_type,
-            raw_text=dto.text,
-            traveling_type=normalize_traveling_type(result.get("traveling_type")),
-        ))
     try:
+        # Create appropriate extractor based on backend
+        if backend == "langchain":
+            extractor = create_traveling_type_extractor(
+                backend="langchain",
+                model_config=consumer_cfg.model
+            )
+        elif backend == "transformer":
+            extractor = create_traveling_type_extractor(
+                backend="transformer",
+                model_path=model_path
+            )
+        elif backend == "hybrid":
+            extractor = create_traveling_type_extractor(
+                backend="hybrid",
+                model_config=consumer_cfg.model,
+                model_path=model_path,
+                confidence_threshold=float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
+            )
+        else:
+            raise ValueError(f"Unknown backend: {backend}")
+        
+        # Extract traveling types - Single call for all items
+        results = extractor.batch_extract_traveling_types(items)
+        # Results format: [{"traveling_type": "question"}, {"traveling_type": "complaint"}, ...]
+        
+        # Convert to DTOs for saving
+        traveling_type_dtos: list[TravelingTypeDTO] = []
+        for dto, result in zip(items, results):
+            traveling_type_dtos.append(TravelingTypeDTO(
+                source_id=dto.source_id,
+                source_type=dto.source_type,
+                raw_text=dto.text,
+                traveling_type=normalize_traveling_type(
+                    result.get("traveling_type")
+                ),
+            ))
+        
+        # Save to database
         dao.save_batch(traveling_type_dtos)
-        print(
-            f"[Batch {batch_id}] Saved {len(traveling_type_dtos)} traveling types"
-        )
+        print(f"[Batch {batch_id}] Saved {len(traveling_type_dtos)} traveling types")
+        
     except Exception as e:
-        print(
-            f"[Batch {batch_id}] Failed while saving traveling types: {e}"
-        )
+        print(f"[Batch {batch_id}] Failed while processing traveling types: {e}")
+        import traceback
+        traceback.print_exc()
     
             
 def run_spark_consumer():
@@ -150,12 +180,21 @@ def run_spark_consumer():
         
         # Ensure topics exist
         ensure_topics_exist(consumer_cfg.kafka)
+        
+        # Initialize DAO and tables
+        dao = TravelingTypeDAO(consumer_cfg.database)
+        try:
+            dao.init_db()
+            print("Database tables initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Could not initialize database tables: {e}")
+            
     except Exception as e:
         print(f"Failed to load config: {e}")
         return
 
     # Subscribe to all topics
-    topics = f"{consumer_cfg.kafka.topic}"
+    topics = f"{consumer_cfg.kafka.topic},{consumer_cfg.kafka.unprocessed_topic}"
     
     print(f"Subscribing to topics: {topics}")
     

@@ -8,7 +8,7 @@ export class IntentionService {
    * Categories:
    */
   async getIntentionStats(): Promise<IntentionStats[]> {
-    const intentions = await intentionRepository.findAll(10000);
+    const intentions = await intentionRepository.findAll(50000);
 
     // Count by category
     const countByCategory = new Map<IntentionType, number>([

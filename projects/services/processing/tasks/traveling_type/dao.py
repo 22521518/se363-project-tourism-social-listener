@@ -12,6 +12,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from .models import Base, TravelingTypeModel,TravelingType
+from ....ingestion.youtube.models import YouTubeCommentModel
+from ....ingestion.youtube.dto import CommentDTO
 from .dto import (
     TravelingTypeDTO, 
     TravelingStatsDTO,
@@ -191,6 +193,53 @@ class TravelingTypeDAO:
             logger.error(f"Error getting all traveling types: {e}", exc_info=True)
             return []
     
+    def get_all_unprocessed(
+    self,
+    limit: int = 50,
+    offset: int = 0
+    ) -> List[CommentDTO]:
+        """
+        Get all unprocessed comments with pagination.
+        
+        Args:
+            limit: Maximum number of results
+            offset: Offset for pagination
+            
+        Returns:
+            List of CommentDTO
+        """
+        try:
+            with self.get_session() as session:
+                # Subquery to get all source_ids from intentions table
+                processed_ids = session.query(TravelingTypeModel.source_id).subquery()
+                
+                unprocessed = session.query(YouTubeCommentModel).filter(
+                    YouTubeCommentModel.id.notin_(processed_ids)
+                ).order_by(
+                    YouTubeCommentModel.created_at.desc()
+                ).limit(limit).offset(offset).all()
+                
+                # Convert ORM objects to DTOs while session is still open
+                return [
+                    CommentDTO(
+                        id=comment.id,
+                        video_id=comment.video_id,
+                        author_display_name=comment.author_display_name,  # Map 'author' to 'author_display_name'
+                        author_channel_id=comment.author_channel_id if hasattr(comment, 'author_channel_id') else None,
+                        text=comment.text,
+                        like_count=comment.like_count if hasattr(comment, 'like_count') else 0,
+                        published_at=comment.published_at if hasattr(comment, 'published_at') else comment.created_at,
+                        updated_at=comment.updated_at,
+                        parent_id=comment.parent_id if hasattr(comment, 'parent_id') else None,
+                        reply_count=comment.reply_count if hasattr(comment, 'reply_count') else 0,
+                    )
+                    for comment in unprocessed
+                ]
+                
+        except Exception as e:
+            logger.error(f"Error getting all unprocessed comments: {e}", exc_info=True)
+            return []
+        
     # ==================== UPDATE OPERATIONS ====================
     
     def update(self, traveling_type_dto: TravelingTypeDTO) -> Optional[TravelingTypeDTO]:
