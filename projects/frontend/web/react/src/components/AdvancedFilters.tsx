@@ -39,13 +39,6 @@ export function AdvancedFilters({ filters, setFilters }: AdvancedFiltersProps) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Type</option>
-            {/* <option value="leisure">Leisure/Vacation</option>
-            <option value="business">Business</option>
-            <option value="adventure">Adventure</option>
-            <option value="cultural">Cultural</option>
-            <option value="eco">Eco-Tourism</option>
-            <option value="wellness">Wellness/Spa</option>
-            <option value="religious">Religious</option> */}
             <option value="business">Business</option>
             <option value="leisure">Leisure</option>
             <option value="adventure">Adventure</option>
@@ -83,24 +76,6 @@ export function AdvancedFilters({ filters, setFilters }: AdvancedFiltersProps) {
           </select>
         </div>
 
-        {/* Tourism Organization */}
-        {/* <div>
-          <label className="block text-sm text-gray-600 mb-2">Organization Type</label>
-          <select
-            value={filters.tourismOrg}
-            onChange={(e) => updateFilter('tourismOrg', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Types</option>
-            <option value="individual">Individual/Solo</option>
-            <option value="couple">Couple</option>
-            <option value="family">Family</option>
-            <option value="group">Group</option>
-            <option value="package">Package Tour</option>
-            <option value="self-planned">Self-Planned</option>
-          </select>
-        </div> */}
-
         {/* Tourism Geography */}
         <div>
           <label className="block text-sm text-gray-600 mb-2">Geography</label>
@@ -126,11 +101,12 @@ export function AdvancedFilters({ filters, setFilters }: AdvancedFiltersProps) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Posts</option>
-            <option value="agency-question">Travel Agency Question</option>
+            <option value="comment">Youtube Comment</option>
+            {/* <option value="agency-question">Travel Agency Question</option>
             <option value="user-review">User Review</option>
             <option value="influencer">Influencer/Celebrity</option>
             <option value="itinerary">Itinerary Share</option>
-            <option value="inquiry">Travel Inquiry</option>
+            <option value="inquiry">Travel Inquiry</option> */}
           </select>
         </div>
 

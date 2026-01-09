@@ -21,10 +21,10 @@ export default function Dashboard() {
         <AdvancedFilters filters={filters} setFilters={setFilters} />
         <QuickStats filters={filters} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <TourismClassification filters={filters} />
+        <TourismClassification filters={filters} />
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <PostTypeAnalysis filters={filters} />
-        </div>
+        </div> */}
 
         <SemanticAnalysis filters={filters} />
       </main>

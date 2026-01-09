@@ -1,3 +1,5 @@
+import { IntentionType } from "./intention.entity";
+import { TravelingType } from "./traveling_type.entity";
 import { YouTubeChannel } from "./youtube_channel.entity";
 
 export interface YouTubeComment {
@@ -13,4 +15,7 @@ export interface YouTubeComment {
   reply_count: number | null;
   created_at: Date;
   updated_at: Date;
+
+  intention_type: IntentionType;
+  traveling_type: TravelingType;
 }

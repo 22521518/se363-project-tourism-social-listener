@@ -13,9 +13,13 @@ import { useTravelingTypeData } from "../hooks/useTravelingTypeData";
 
 interface TourismClassificationProps {
   filters: any;
+  id?: string;
 }
 
-export function TourismClassification({ filters }: TourismClassificationProps) {
+export function TourismClassification({
+  filters,
+  id,
+}: TourismClassificationProps) {
   // Fetch geography data from API
   const {
     data: geoData,
@@ -26,29 +30,12 @@ export function TourismClassification({ filters }: TourismClassificationProps) {
     data: intentionData,
     loading: intentionLoading,
     error: intentionError,
-  } = useIntentionsData();
+  } = useIntentionsData(id);
   const {
     data: travelingTypeData,
     loading: travelingTypeLoading,
     error: travelingTypeError,
-  } = useTravelingTypeData();
-
-  const purposeData = [
-    { name: "Leisure/Vacation", value: 4200, color: "#3b82f6" },
-    { name: "Adventure", value: 2800, color: "#10b981" },
-    { name: "Cultural", value: 2100, color: "#f59e0b" },
-    { name: "Business", value: 1800, color: "#6366f1" },
-    { name: "Eco-Tourism", value: 1600, color: "#14b8a6" },
-    { name: "Wellness", value: 1200, color: "#ec4899" },
-  ];
-
-  const orgData = [
-    { name: "Individual/Solo", value: 3500, color: "#8b5cf6" },
-    { name: "Family", value: 3200, color: "#3b82f6" },
-    { name: "Couple", value: 2800, color: "#ec4899" },
-    { name: "Package Tour", value: 2400, color: "#f59e0b" },
-    { name: "Group", value: 1900, color: "#10b981" },
-  ];
+  } = useTravelingTypeData(id);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

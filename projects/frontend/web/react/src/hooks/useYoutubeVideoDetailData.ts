@@ -1,38 +1,43 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchApi } from "../services/api";
-import { IntentionStats } from "../types/intention";
+import {
+  YouTubeVideo,
+  YoutubeVideoListMeta,
+  YoutubeVideoListWithMeta,
+} from "../types/youtube_video";
 
-interface UseIntentionsDataResult {
-  data: IntentionStats[];
+interface UseYoutubeVideoDataResult {
+  data: YouTubeVideo | undefined;
   loading: boolean;
   error: string | null;
   refetch: () => void;
 }
 
 /**
- * Custom hook to fetch intentions statistics from the API.
+ * Custom hook to fetch traveling type statistics from the API.
  */
-export function useIntentionsData(id = ""): UseIntentionsDataResult {
-  const [data, setData] = useState<IntentionStats[]>([]);
+export function useYoutubeVideoDetailData(
+  id: string | undefined
+): UseYoutubeVideoDataResult {
+  const [data, setData] = useState<YouTubeVideo>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const stats = await fetchApi<IntentionStats[]>(
-        id ? `/intentions/stats/video/${id}` : "/intentions/stats"
-      );
-      setData(stats);
+      const data = await fetchApi<YouTubeVideo>(`/youtube_videos/${id}`);
+      setData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch data");
       // Fallback to empty array on error
-      setData([]);
+      setData(undefined);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     fetchData();

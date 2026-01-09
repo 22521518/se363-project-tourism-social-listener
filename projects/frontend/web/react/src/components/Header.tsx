@@ -29,9 +29,9 @@ export function Header() {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
-                <Link to={`/${tab.id}`}>
+                <Link key={tab.id} to={`/${tab.id}`}>
                   <button
-                    key={tab.id}
+                    
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                       pathname === `/${tab.id}`
                         ? "bg-blue-600 text-white"
