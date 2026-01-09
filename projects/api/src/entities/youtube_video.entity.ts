@@ -16,5 +16,12 @@ export interface YouTubeVideo {
   created_at: Date;
   updated_at: Date;
 
-  channel?: YouTubeChannel;
+  processed_intentions_count: number;
+  processed_traveling_types_count: number;
+
+  channel: {
+    title: string;
+    thumbnail_url: string | null;
+    country: string | null;
+  };
 }

@@ -1,10 +1,21 @@
 import { YouTubeComment } from "../entities/youtube_comment.entity";
-import { youtubeCommentRepository } from "../repositories/youtube_comment.repository";
+import {
+  YoutubeCommentListWithMeta,
+  youtubeCommentRepository,
+} from "../repositories/youtube_comment.repository";
 
 export class YouTubeCommentService {
   // Service methods for YouTubeComment entity
-  async getYoutubeComments(): Promise<YouTubeComment[]> {
-    return youtubeCommentRepository.findAll();
+  async getYoutubeComments(
+    limit: number,
+    offset: number,
+    timeRange: string
+  ): Promise<YoutubeCommentListWithMeta> {
+    return youtubeCommentRepository.findAll(
+      limit,
+      offset,
+      timeRange
+    );
   }
 
   async getYoutubeCommentsById(id: string): Promise<YouTubeComment | null> {
@@ -12,9 +23,49 @@ export class YouTubeCommentService {
   }
 
   async getYoutubeCommentsByVideoId(
-    videoId: string
-  ): Promise<YouTubeComment[]> {
-    return youtubeCommentRepository.findByVideoId(videoId);
+    videoId: string,
+    limit: number,
+    offset: number,
+    timeRange: string
+  ): Promise<YoutubeCommentListWithMeta> {
+    return youtubeCommentRepository.findByVideoId(
+      videoId,
+      limit,
+      offset,
+      timeRange
+    );
+  }
+
+  async getYoutubeCommentsIntentionsByVideoId(
+    videoId: string,
+    limit: number,
+    offset: number,
+    intention_type: string,
+
+    timeRange: string
+  ): Promise<YoutubeCommentListWithMeta> {
+    return youtubeCommentRepository.findIntentionByVideoId(
+      videoId,
+      limit,
+      offset,
+      intention_type,
+      timeRange
+    );
+  }
+  async getYoutubeCommentsTravelingTypeByVideoId(
+    videoId: string,
+    limit: number,
+    offset: number,
+    traveling_type: string,
+    timeRange: string
+  ): Promise<YoutubeCommentListWithMeta> {
+    return youtubeCommentRepository.findTravelingTypeByVideoId(
+      videoId,
+      limit,
+      offset,
+      traveling_type,
+      timeRange
+    );
   }
 }
 

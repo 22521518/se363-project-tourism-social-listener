@@ -17,14 +17,27 @@ export class TravelingTypeRepository {
   /**
    * Get all traveling type extractions.
    */
-  async findAll(limit = 100, offset = 0): Promise<TravelingTypeExtraction[]> {
+  async findAll(): Promise<TravelingTypeExtraction[]> {
     const sql = `
       SELECT id, source_id, source_type, raw_text, traveling_type, created_at
       FROM traveling_types
-      ORDER BY created_at DESC
-      LIMIT $1 OFFSET $2
+      
+
     `;
-    const rows = await query<RawTravelingTypeRow>(sql, [limit, offset]);
+    const rows = await query<RawTravelingTypeRow>(sql);
+    return rows.map((row) => this.mapToEntity(row));
+  }
+
+  async findByVideo(id: string): Promise<TravelingTypeExtraction[]> {
+    const sql = `
+      SELECT t.id, source_id, source_type, raw_text, traveling_type, t.created_at
+      FROM traveling_types t
+      JOIN youtube_comments yc ON yc.id = t.source_id
+      WHERE video_id = $1
+     
+
+    `;
+    const rows = await query<RawTravelingTypeRow>(sql,[id]);
     return rows.map((row) => this.mapToEntity(row));
   }
 

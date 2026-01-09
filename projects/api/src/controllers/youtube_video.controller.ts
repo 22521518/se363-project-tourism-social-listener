@@ -7,7 +7,10 @@ youtubeVideoRouter.get("/", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
-    const data = await youtubeVideoService.getYoutubeVideos(limit, offset);
+    const channel = req.query.channel as string || "all";
+    const timeRange = req.query.timeRange as string || "all";
+
+    const data = await youtubeVideoService.getYoutubeVideos(limit, offset, channel,timeRange);
     res.json({ success: true, data });
   } catch (error) {
     console.error("Error fetching YouTube videos:", error);

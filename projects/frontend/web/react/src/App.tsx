@@ -27,8 +27,8 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="posts" element={<PostAnalysis />} />
+        <Route path="posts/:id" element={<PostDetail />} />
       </Route>
-      <Route path="posts/:id" element={<PostDetail />} />
     </Routes>
   );
 }
