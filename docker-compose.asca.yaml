@@ -1,0 +1,52 @@
+# ASCA Docker Compose
+# =====================
+# Runs the ASCA Streamlit monitoring service
+# 
+# Usage (from airflow root):
+#   docker-compose -f docker-compose.asca.yaml up --build -d
+#
+# View logs:
+#   docker-compose -f docker-compose.asca.yaml logs -f asca-streamlit
+
+version: '3.8'
+
+services:
+  asca-streamlit:
+    build:
+      context: ./projects/services/processing/tasks/asca/streamlit
+      dockerfile: Dockerfile
+    container_name: asca-streamlit
+    ports:
+      - "8152:8152"
+    environment:
+      # Database
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-airflow}
+      - DB_PASSWORD=${DB_PASSWORD:-airflow}
+      - DB_NAME=${DB_NAME:-airflow}
+      # Kafka
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - KAFKA_TOPIC_ASCA_INPUT=${KAFKA_TOPIC_ASCA_INPUT:-asca-input}
+      - KAFKA_TOPIC_ASCA_OUTPUT=${KAFKA_TOPIC_ASCA_OUTPUT:-asca-output}
+      # Python path for imports
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      # Mount entire airflow project for imports
+      - ./:/opt/airflow:ro
+      # Mount models directory
+      - ./models:/opt/airflow/models:ro
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8152/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  default:
+    name: airflow_default
+    external: true

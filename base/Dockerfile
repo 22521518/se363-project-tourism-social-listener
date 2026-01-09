@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-
     g++ \
     git \
     curl \
+    unzip \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
     libcups2 \
@@ -36,6 +37,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# Download VnCoreNLP for Vietnamese NLP
+RUN mkdir -p /opt/airflow/VnCoreNLP-1.2 && \
+    curl -L -o /tmp/vncorenlp.zip "https://github.com/vncorenlp/VnCoreNLP/archive/refs/tags/v1.2.zip" && \
+    unzip -q /tmp/vncorenlp.zip -d /tmp && \
+    cp -r /tmp/VnCoreNLP-1.2/* /opt/airflow/VnCoreNLP-1.2/ && \
+    rm -rf /tmp/vncorenlp.zip /tmp/VnCoreNLP-1.2 && \
+    chown -R airflow:root /opt/airflow/VnCoreNLP-1.2
+
+ENV VNCORENLP_PATH=/opt/airflow/VnCoreNLP-1.2/VnCoreNLP-1.2.jar
+
 
 # Copy file requirements trong chính thư mục base
 COPY base/requirements.txt /tmp/base_requirements.txt

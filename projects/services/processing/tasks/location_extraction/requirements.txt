@@ -36,3 +36,18 @@ psycopg2-binary>=2.9.0
 # Kafka & Distributed Processing
 kafka-python-ng>=2.0.0
 
+# HuggingFace Transformers for NER
+transformers>=4.30.0
+
+# PyTorch Installation Options:
+# =============================
+# OPTION 1 (GPU): If you have CUDA/cuDNN installed, use default torch:
+#   pip install torch>=2.0.0
+#
+# OPTION 2 (CPU-only): If you DON'T have CUDA libraries, install CPU version:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# For Docker without GPU, use the CPU-only version to avoid libcudnn errors.
+# The code automatically detects and uses GPU when available.
+torch>=2.0.0
+

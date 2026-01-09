@@ -1,91 +1,58 @@
 """
 Location Extraction Result DTOs.
 
-These DTOs define the output format for location extraction,
-matching the schema defined in location_extraction.schema.json.
+Simplified DTOs for NER-based location extraction using Davlan/xlm-roberta-base-ner-hrl.
 """
 
-from typing import List, Literal, Optional
+from typing import List
 from pydantic import BaseModel, Field, field_validator
 
 
-LocationType = Literal["country", "city", "state", "province", "landmark", "unknown"]
-ExtractorType = Literal["llm", "gazetteer", "regex"]
-
-
 class Location(BaseModel):
-    """A single extracted location."""
+    """A single extracted location from NER."""
     
-    name: str = Field(
+    word: str = Field(
         ...,
-        description="Name of the location"
+        description="The extracted location text"
     )
     
-    type: LocationType = Field(
-        ...,
-        description="Type of location"
-    )
-    
-    confidence: float = Field(
+    score: float = Field(
         ...,
         ge=0.0,
         le=1.0,
         description="Confidence score between 0 and 1"
     )
+    
+    entity_group: str = Field(
+        default="LOC",
+        description="Entity group type (always LOC for locations)"
+    )
+    
+    start: int = Field(
+        default=0,
+        description="Start character position in original text"
+    )
+    
+    end: int = Field(
+        default=0,
+        description="End character position in original text"
+    )
 
     class Config:
         extra = 'allow'
     
-    @field_validator("confidence")
+    @field_validator("score")
     @classmethod
-    def validate_confidence(cls, v: float) -> float:
-        """Ensure confidence is within valid range."""
+    def validate_score(cls, v: float) -> float:
+        """Ensure score is within valid range."""
         return max(0.0, min(1.0, v))
-
-
-class PrimaryLocation(BaseModel):
-    """The primary/main location identified in the text."""
-    
-    name: str = Field(
-        ...,
-        description="Name of the primary location"
-    )
-    
-    confidence: float = Field(
-        ...,
-        ge=0.0,
-        le=1.0,
-        description="Confidence score for the primary location"
-    )
-
-
-    class Config:
-        extra = 'allow'
-
-
-class ExtractionMeta(BaseModel):
-    """Metadata about the extraction process."""
-    
-    extractor: ExtractorType = Field(
-        ...,
-        description="Which extractor was used"
-    )
-    
-    fallback_used: bool = Field(
-        default=False,
-        description="Whether a fallback extractor was used"
-    )
-
-
-    class Config:
-        extra = 'allow'
 
 
 class LocationExtractionResult(BaseModel):
     """
     Complete result of location extraction.
     
-    This matches the schema defined in location_extraction.schema.json.
+    Simple structure containing only a list of extracted locations.
     """
     
     locations: List[Location] = Field(
@@ -93,48 +60,37 @@ class LocationExtractionResult(BaseModel):
         description="List of extracted locations"
     )
     
-    primary_location: Optional[PrimaryLocation] = Field(
-        default=None,
-        description="The primary location, if identified"
-    )
-    
-    overall_score: float = Field(
-        default=0.0,
-        ge=0.0,
-        le=1.0,
-        description="Overall confidence score for the extraction"
-    )
-    
-    meta: ExtractionMeta = Field(
-        ...,
-        description="Metadata about the extraction process"
-    )
-    
     class Config:
         extra = 'allow'
 
     def to_dict(self) -> dict:
-        """Convert to dictionary matching the JSON schema."""
+        """Convert to dictionary."""
         return self.model_dump()
     
     @classmethod
-    def empty(cls, extractor: ExtractorType = "llm", fallback_used: bool = False) -> "LocationExtractionResult":
+    def empty(cls) -> "LocationExtractionResult":
         """Create an empty but valid result."""
-        return cls(
-            locations=[],
-            primary_location=None,
-            overall_score=0.0,
-            meta=ExtractionMeta(extractor=extractor, fallback_used=fallback_used)
-        )
+        return cls(locations=[])
     
-    def validate_primary_location(self) -> bool:
+    @classmethod
+    def from_ner_output(cls, ner_output: List[dict]) -> "LocationExtractionResult":
         """
-        Validate that primary_location exists in locations list.
+        Create from NER pipeline output.
         
-        Returns True if valid (primary is None or exists in locations).
+        Args:
+            ner_output: List of entity dictionaries from transformers pipeline
+            
+        Returns:
+            LocationExtractionResult with filtered LOC entities
         """
-        if self.primary_location is None:
-            return True
-        
-        location_names = [loc.name.lower() for loc in self.locations]
-        return self.primary_location.name.lower() in location_names
+        locations = []
+        for entity in ner_output:
+            if entity.get("entity_group") == "LOC":
+                locations.append(Location(
+                    word=entity.get("word", ""),
+                    score=float(entity.get("score", 0.0)),
+                    entity_group=entity.get("entity_group", "LOC"),
+                    start=entity.get("start", 0),
+                    end=entity.get("end", 0)
+                ))
+        return cls(locations=locations)

@@ -34,6 +34,19 @@ source "${VENV_DIR}/bin/activate"
 
 echo "Installing/Updating requirements..."
 python -m pip install --upgrade pip
+
+# Check if NVIDIA GPU is available
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+    echo "GPU detected. Installing PyTorch with CUDA support..."
+    # Install default PyTorch with CUDA support
+    python -m pip install torch>=2.0.0
+else
+    echo "No GPU detected. Installing CPU-only PyTorch..."
+    # Install CPU-only PyTorch to avoid libcudnn.so.9 errors
+    python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+fi
+
+# Install remaining requirements (torch will be skipped as it's already installed)
 python -m pip install -r "${REQ_FILE}"
 
 echo "Environment setup complete."

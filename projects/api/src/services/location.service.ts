@@ -162,7 +162,7 @@ export class LocationService {
    * Classify a location as Domestic, Regional, or International.
    */
   private classifyLocation(location: Location): GeographyCategory {
-    const normalized = this.normalizeLocation(location.name);
+    const normalized = this.normalizeLocation(location.word);
 
     // Check if it's Vietnam (Domestic)
     if (VIETNAM_NAMES.has(normalized)) {

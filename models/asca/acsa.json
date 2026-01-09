@@ -1,0 +1,61 @@
+{
+  "train_time": 30.382044553756714,
+  "acd_best_params": {
+    "ACCOMMODATION": {
+      "C": 1.0,
+      "class_weight": "balanced"
+    },
+    "AMBIENCE": {
+      "C": 1.0,
+      "class_weight": "balanced"
+    },
+    "FOOD": {
+      "C": 1.0,
+      "class_weight": "balanced"
+    },
+    "LOCATION": {
+      "C": 1.0,
+      "class_weight": null
+    },
+    "PRICE": {
+      "C": 1.0,
+      "class_weight": null
+    },
+    "SERVICE": {
+      "C": 1.0,
+      "class_weight": null
+    }
+  },
+  "asc_best_params": {
+    "C": 0.1,
+    "class_weight": "balanced"
+  },
+  "val_scores": {
+    "acd": {
+      "hamming_loss": 0.07614942528735633,
+      "jaccard_micro": 0.7887903329476796,
+      "jaccard_macro": 0.7325025318779677
+    },
+    "asc": {
+      "accuracy": 0.7607682530716,
+      "macro_f1": 0.6100065302152601,
+      "micro_f1": 0.7607682530716
+    }
+  },
+  "test_scores": {
+    "acd": {
+      "hamming_loss": 0.07614942528735633,
+      "jaccard_micro": 0.7887903329476796,
+      "jaccard_macro": 0.7325025318779677
+    },
+    "asc": {
+      "accuracy": 0.7607682530716,
+      "macro_f1": 0.6100065302152601,
+      "micro_f1": 0.7607682530716
+    }
+  },
+  "trained_stages": {
+    "acd": true,
+    "asc": true
+  }
+}
