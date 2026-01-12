@@ -63,7 +63,7 @@ from projects.services.processing.tasks.location_extraction.config.settings impo
 from projects.services.processing.tasks.location_extraction.dao.dao import LocationExtractionDAO
 from projects.services.processing.tasks.location_extraction.dto.persistence import PersistenceLocationDTO
 from projects.services.processing.tasks.location_extraction.dto.location_result import (
-    LocationExtractionResult, Location, PrimaryLocation, ExtractionMeta
+    LocationExtractionResult, Location
 )
 
 # Try to import the LLM pipeline
@@ -211,12 +211,7 @@ class LocationExtractionConsumer:
     def _create_mock_result(self, text: str) -> LocationExtractionResult:
         """Create a mock extraction result for testing."""
         # Simple mock: just return empty result
-        return LocationExtractionResult(
-            locations=[],
-            primary_location=None,
-            overall_score=0.0,
-            meta=ExtractionMeta(extractor="llm", fallback_used=False)
-        )
+        return LocationExtractionResult(locations=[])
     
     def run(self, max_messages: int = None):
         """

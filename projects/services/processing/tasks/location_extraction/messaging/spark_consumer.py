@@ -77,21 +77,13 @@ def get_input_schema():
 
 
 def get_output_schema():
-    """Schema for output extraction results."""
+    """Schema for output extraction results (simplified NER-based)."""
     location_schema = StructType([
-        StructField("name", StringType(), False),
-        StructField("type", StringType(), False),
-        StructField("confidence", FloatType(), False)
-    ])
-    
-    primary_location_schema = StructType([
-        StructField("name", StringType(), False),
-        StructField("confidence", FloatType(), False)
-    ])
-    
-    meta_schema = StructType([
-        StructField("extractor", StringType(), False),
-        StructField("fallback_used", BooleanType(), False)
+        StructField("word", StringType(), False),
+        StructField("score", FloatType(), False),
+        StructField("entity_group", StringType(), False),
+        StructField("start", StringType(), False),
+        StructField("end", StringType(), False)
     ])
     
     return StructType([
@@ -99,9 +91,6 @@ def get_output_schema():
         StructField("source_type", StringType(), False),
         StructField("raw_text", StringType(), False),
         StructField("locations", ArrayType(location_schema), False),
-        StructField("primary_location", primary_location_schema, True),
-        StructField("overall_score", FloatType(), False),
-        StructField("meta", meta_schema, False),
         StructField("processed_at", StringType(), False),
         StructField("success", BooleanType(), False)
     ])
@@ -117,7 +106,7 @@ def process_batch_and_write_to_db(batch_df, batch_id):
     from projects.services.processing.tasks.location_extraction.dao.dao import LocationExtractionDAO
     from projects.services.processing.tasks.location_extraction.dto.persistence import PersistenceLocationDTO
     from projects.services.processing.tasks.location_extraction.dto.location_result import (
-        LocationExtractionResult, ExtractionMeta
+        LocationExtractionResult, Location
     )
     
     if batch_df.isEmpty():
@@ -156,20 +145,10 @@ def process_batch_and_write_to_db(batch_df, batch_id):
                     extraction_result = pipeline.extract(text)
                 except Exception as e:
                     logger.error(f"LLM extraction failed for {source_id}: {e}")
-                    extraction_result = LocationExtractionResult(
-                        locations=[],
-                        primary_location=None,
-                        overall_score=0.0,
-                        meta=ExtractionMeta(extractor="llm", fallback_used=False)
-                    )
+                    extraction_result = LocationExtractionResult(locations=[])
             else:
                 # Mock result
-                extraction_result = LocationExtractionResult(
-                    locations=[],
-                    primary_location=None,
-                    overall_score=0.0,
-                    meta=ExtractionMeta(extractor="llm", fallback_used=False)
-                )
+                extraction_result = LocationExtractionResult(locations=[])
             
             # Save to database
             dto = PersistenceLocationDTO(

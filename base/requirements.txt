@@ -8,6 +8,7 @@ numpy==1.26.4
 scikit-learn==1.8.0
 joblib==1.3.0
 tqdm==4.67.1
+vncorenlp
 # requests==2.31.0
 sqlalchemy==1.4.52
 psycopg2-binary==2.9.9

@@ -12,7 +12,7 @@ REQ_FILE="${SERVICE_ROOT}/requirements.txt"
 VENV_DIR="${1:-}"
 
 if [[ -z "${VENV_DIR}" ]]; then
-    echo "Usage: $0 <VENV_DIR>"
+    echo "Usage: $0 <VENV_DIR>" 
     exit 1
 fi
 
@@ -21,7 +21,12 @@ if [[ ! -f "${REQ_FILE}" ]]; then
     exit 1
 fi
 
-if [[ ! -d "${VENV_DIR}" ]]; then
+# Check if venv exists AND is valid (has activate script)
+if [[ ! -f "${VENV_DIR}/bin/activate" ]]; then
+    if [[ -d "${VENV_DIR}" ]]; then
+        echo "Virtual environment at ${VENV_DIR} is corrupted. Recreating..."
+        rm -rf "${VENV_DIR}"
+    fi
     echo "Creating virtual environment at ${VENV_DIR}..."
     python3 -m venv "${VENV_DIR}"
 else

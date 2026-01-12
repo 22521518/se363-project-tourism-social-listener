@@ -5,9 +5,10 @@ This is the canonical input format for the location extraction pipeline.
 All processing starts from this DTO.
 """
 
+import re
 from datetime import datetime
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional, Union
+from pydantic import BaseModel, Field, field_validator
 
 
 class UnifiedTextEvent(BaseModel):
@@ -63,6 +64,30 @@ class UnifiedTextEvent(BaseModel):
         default=None,
         description="User ID of the validator, if validated"
     )
+    
+    @field_validator('created_at', mode='before')
+    @classmethod
+    def parse_datetime(cls, value):
+        """
+        Handle datetime strings with incomplete timezone formats.
+        
+        Converts formats like '2026-01-06 16:14:37+00' to '2026-01-06 16:14:37+00:00'
+        for proper Pydantic parsing.
+        """
+        if value is None:
+            return None
+        
+        if isinstance(value, datetime):
+            return value
+        
+        if isinstance(value, str):
+            # Pattern: ends with +HH or -HH (2-digit tz without minutes)
+            # Convert to +HH:00 or -HH:00
+            if re.match(r'.*[+-]\d{2}$', value):
+                value = value + ':00'
+            return value
+        
+        return value
 
     class Config:
         json_schema_extra = {

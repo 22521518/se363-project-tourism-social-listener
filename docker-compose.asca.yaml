@@ -8,8 +8,6 @@
 # View logs:
 #   docker-compose -f docker-compose.asca.yaml logs -f asca-streamlit
 
-version: '3.8'
-
 services:
   asca-streamlit:
     build:

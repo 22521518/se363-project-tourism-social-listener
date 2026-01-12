@@ -2,7 +2,7 @@
 ASCA Extraction Result DTOs.
 
 These DTOs define the output format for ASCA extraction.
-Categories: LOCATION, PRICE, ACCOMMODATION, FOOD, SERVICE, AMBIENCE
+Categories: LOCATION, PRICE, ACCOMMODATION, FOOD, SERVICE, AMBIENCE, GENERAL
 Sentiments: positive, negative, neutral
 """
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 # Type definitions matching ASCA labels
-CategoryType = Literal["LOCATION", "PRICE", "ACCOMMODATION", "FOOD", "SERVICE", "AMBIENCE"]
+CategoryType = Literal["LOCATION", "PRICE", "ACCOMMODATION", "FOOD", "SERVICE", "AMBIENCE", "GENERAL"]
 SentimentType = Literal["positive", "negative", "neutral"]
 ExtractorType = Literal["asca", "manual"]
 
