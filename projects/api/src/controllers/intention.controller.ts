@@ -33,3 +33,22 @@ intentionRouter.get(
     }
   }
 );
+
+intentionRouter.get(
+  "/video/:id/raw",
+  async (_req: Request, res: Response) => {
+    const id = _req.params.id;
+    try {
+      const intentions = await intentionService.getVideoIntentions(id);
+      res.json({ success: true, data: intentions });
+    } catch (error) {
+      console.error("Error fetching video intentions:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: "Failed to fetch video intentions",
+        });
+    }
+  }
+);

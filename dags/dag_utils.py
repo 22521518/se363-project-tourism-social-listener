@@ -17,12 +17,37 @@ from dotenv import load_dotenv
 # ============================================================================
 # Load Environment Variables from .env file
 # ============================================================================
-# Determine AIRFLOW_HOME first, then load .env from there
 AIRFLOW_HOME = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
 
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, ".env")
-load_dotenv(env_path)
+def load_env_files():
+    """Load .env files from multiple possible locations in order of priority."""
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    # Possible .env locations in order of priority:
+    possible_paths = [
+        # 1. projects/.env (most specific for services)
+        os.path.join(project_root, "projects", ".env"),
+        # 2. airflow root .env
+        os.path.join(project_root, ".env"),
+        # 3. Docker paths
+        "/opt/airflow/projects/.env",
+        "/opt/airflow/.env",
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if os.path.exists(env_path):
+            load_dotenv(env_path, override=True)
+            print(f"✅ DAG Utils: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        # Fallback to default dotenv search
+        load_dotenv()
+        print("⚠️ DAG Utils: Using default dotenv search")
+
+load_env_files()
 
 # ============================================================================
 # Path Configuration

@@ -16,17 +16,9 @@ services:
     container_name: asca-streamlit
     ports:
       - "8152:8152"
+    env_file:
+      - ./projects/services/processing/tasks/asca/.env
     environment:
-      # Database
-      - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-airflow}
-      - DB_PASSWORD=${DB_PASSWORD:-airflow}
-      - DB_NAME=${DB_NAME:-airflow}
-      # Kafka
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
-      - KAFKA_TOPIC_ASCA_INPUT=${KAFKA_TOPIC_ASCA_INPUT:-asca-input}
-      - KAFKA_TOPIC_ASCA_OUTPUT=${KAFKA_TOPIC_ASCA_OUTPUT:-asca-output}
       # Python path for imports
       - PYTHONPATH=/opt/airflow
     volumes:

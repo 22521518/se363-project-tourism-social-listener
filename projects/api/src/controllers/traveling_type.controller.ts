@@ -31,3 +31,20 @@ travelingTypeRouter.get(
     }
   }
 );
+
+travelingTypeRouter.get(
+  "/video/:id/raw",
+  async (_req: Request, res: Response) => {
+    try {
+      const id = _req.params.id;
+      const travelingTypes = await travelingTypeService.getVideoTravelingTypes(id);
+      res.json({ success: true, data: travelingTypes });
+    } catch (error) {
+      console.error("Error fetching video traveling types:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch video traveling types",
+      });
+    }
+  }
+);

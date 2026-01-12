@@ -7,8 +7,9 @@ Uses the local core module for predictor and preprocessing.
 
 import sys
 import logging
+import threading
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # Setup path for imports
 project_root = Path(__file__).resolve().parents[5]
@@ -35,6 +36,54 @@ from projects.services.processing.tasks.asca.core import ACSAPredictor
 
 logger = logging.getLogger(__name__)
 
+# Singleton instance and lock for thread-safe singleton pattern
+_pipeline_instance: Optional['ASCAExtractionPipeline'] = None
+_pipeline_lock = threading.Lock()
+
+
+def get_pipeline_instance(
+    model_path: Optional[str] = None,
+    language: Optional[str] = None,
+    auto_detect_language: Optional[bool] = None,
+    vncorenlp_path: Optional[str] = None
+) -> 'ASCAExtractionPipeline':
+    """
+    Get the singleton ASCAExtractionPipeline instance (thread-safe).
+    
+    This ensures only ONE pipeline instance (and ONE VnCoreNLP server) exists
+    across the entire application, regardless of how many times this is called.
+    
+    Args:
+        model_path: Path to the ASCA model (only used on first call)
+        language: Default language (only used on first call)
+        auto_detect_language: Whether to auto-detect language (only used on first call)
+        vncorenlp_path: Path to VnCoreNLP JAR (only used on first call)
+    
+    Returns:
+        The singleton ASCAExtractionPipeline instance
+    """
+    global _pipeline_instance
+    
+    # Fast path: return existing instance (no lock needed)
+    if _pipeline_instance is not None:
+        return _pipeline_instance
+    
+    # Slow path: create instance (requires lock)
+    with _pipeline_lock:
+        # Double-check after acquiring lock
+        if _pipeline_instance is not None:
+            return _pipeline_instance
+        
+        logger.info("🔧 Creating singleton ASCAExtractionPipeline instance...")
+        _pipeline_instance = ASCAExtractionPipeline(
+            model_path=model_path,
+            language=language,
+            auto_detect_language=auto_detect_language,
+            vncorenlp_path=vncorenlp_path
+        )
+        logger.info("✅ Singleton ASCAExtractionPipeline created successfully")
+        return _pipeline_instance
+
 
 class ASCAExtractionPipeline:
     """
@@ -42,6 +91,9 @@ class ASCAExtractionPipeline:
     
     Uses the local core module (ACSAPredictor) which loads the trained model
     and provides preprocessing and inference.
+    
+    NOTE: Use get_pipeline_instance() to get the singleton instance instead of
+    creating this class directly, to avoid multiple VnCoreNLP servers.
     """
     
     def __init__(
@@ -65,25 +117,30 @@ class ASCAExtractionPipeline:
         self.auto_detect_language = auto_detect_language if auto_detect_language is not None else settings.asca_auto_detect_language
         self.vncorenlp_path = vncorenlp_path or settings.vncorenlp_path
         
-        # Lazy initialization
-        self._predictor = None
-        self._predictor_language = None
-        self._predictor_initialized = False
+        # DUAL-PREDICTOR CACHE: Cache both vi and en predictors to avoid recreation
+        # This prevents VnCoreNLP server from being restarted on every language switch
+        self._predictors: Dict[str, ACSAPredictor] = {}  # {language: predictor}
+        self._lock = threading.Lock()  # Thread lock to prevent race conditions
         
         logger.info(f"ASCAExtractionPipeline initialized - model: {self.model_path}, auto_detect: {self.auto_detect_language}")
     
     def _get_predictor(self, language: str):
         """
-        Get or initialize the ASCA predictor.
+        Get or initialize the ASCA predictor for the given language (thread-safe).
         
-        Re-initializes if language changes (different preprocessor needed).
+        Uses dual-predictor caching: caches BOTH vi and en predictors so they're
+        created only once and reused. This eliminates constant recreation on
+        language switches.
         """
-        if self._predictor is not None and self._predictor_language == language:
-            return self._predictor
+        # Fast path: return cached predictor if exists (no lock needed for read)
+        if language in self._predictors:
+            return self._predictors[language]
         
-        if not self._predictor_initialized or self._predictor_language != language:
-            self._predictor_initialized = True
-            self._predictor_language = language
+        # Slow path: need to create predictor for this language (requires lock)
+        with self._lock:
+            # Double-check after acquiring lock
+            if language in self._predictors:
+                return self._predictors[language]
             
             try:
                 # Check if model file exists
@@ -93,32 +150,35 @@ class ASCAExtractionPipeline:
                     logger.error(f"❌ MODEL FILE NOT FOUND!")
                     logger.error(f"❌ Path: {self.model_path}")
                     logger.error(f"{'='*50}")
-                    self._predictor = None
                     return None
                 
+                logger.info(f"🔧 Creating predictor for language: {language}")
                 logger.info(f"Loading ASCA model from: {self.model_path}")
                 
-                self._predictor = ACSAPredictor(
+                predictor = ACSAPredictor(
                     model_path=self.model_path,
                     language=language,
                     vncorenlp_path=self.vncorenlp_path if language == 'vi' else None
                 )
-                logger.info(f"✅ ASCA predictor initialized for language: {language}")
+                
+                # Cache the predictor for reuse
+                self._predictors[language] = predictor
+                logger.info(f"✅ ASCA predictor for '{language}' created and cached (total cached: {len(self._predictors)})")
+                
+                return predictor
                 
             except ImportError as e:
                 logger.error(f"{'='*50}")
                 logger.error(f"❌ FAILED TO IMPORT ASCA PREDICTOR")
                 logger.error(f"❌ Error: {e}")
                 logger.error(f"{'='*50}")
-                self._predictor = None
+                return None
             except Exception as e:
                 logger.error(f"{'='*50}")
                 logger.error(f"❌ FAILED TO INITIALIZE ASCA PREDICTOR")
                 logger.error(f"❌ Error: {e}")
                 logger.error(f"{'='*50}")
-                self._predictor = None
-        
-        return self._predictor
+                return None
     
     def _detect_language(self, text: str) -> str:
         """Detect language from text."""
@@ -231,10 +291,17 @@ class ASCAExtractionPipeline:
         return self.process_batch(events)
     
     def close(self):
-        """Clean up resources."""
-        if self._predictor and hasattr(self._predictor, 'close'):
-            self._predictor.close()
-            self._predictor = None
+        """Clean up all cached predictors (including VnCoreNLP servers)."""
+        with self._lock:
+            for language, predictor in self._predictors.items():
+                try:
+                    if hasattr(predictor, 'close'):
+                        predictor.close()
+                        logger.info(f"✅ Closed predictor for language: {language}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Error closing predictor for {language}: {e}")
+            self._predictors.clear()
+            logger.info("✅ All cached predictors closed")
 
 
 def extract_aspects(event: UnifiedTextEvent) -> ASCAExtractionResult:

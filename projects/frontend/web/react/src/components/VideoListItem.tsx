@@ -248,22 +248,16 @@ function VideoDetailModal({
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       className="z-50 flex items-center justify-center"
     >
-      {/* Backdrop */}
-      <div
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        className="bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
 
       {/* Modal */}
-      <div style={{ width: '700px', maxHeight: '500px' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div style={{ width: '70vw', height: '70vh' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex-col mx-12 my-12">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-2">
             <Play className="w-5 h-5 text-blue-600" />
             <h2 className="font-semibold text-gray-900">Thống kê xử lý Video</h2>
           </div>
-          <button
+          <button 
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
           >
@@ -272,7 +266,7 @@ function VideoDetailModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 overflow-y-auto">
+        <div className="flex-1 p-4 min-h-max max-h-max overflow-y-auto">
           {/* Video Info */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex gap-4">
@@ -482,6 +476,13 @@ function VideoDetailModal({
           </button>
         </div>
       </div>
+      
+      {/* Backdrop */}
+      <div
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        className="-z-40 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
     </div>
   );
 }
@@ -649,19 +650,19 @@ function CommentDetailModal({
   return (
     <div 
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }} 
-      className="z-50 flex items-center justify-center"
+      className="z-50 flex items-center justify-center w-full h-full relative"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Backdrop */}
-      <div 
+      {/* <div 
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        className="bg-black/50 backdrop-blur-sm"
+        className="-z-40 bg-black/50 backdrop-blur-sm bg-opacity-50 bg-gray-50"
         onClick={onClose}
-      />
+      /> */}
       
       {/* Modal */}
-      <div style={{ width: '700px', maxHeight: '500px' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header */}
+      <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex w-[50%] h-[70%]">
+        {/* Header */}  
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-blue-600" />
@@ -676,7 +677,7 @@ function CommentDetailModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 overflow-y-auto">
+        <div className="flex-1 p-4 overflow-y-scroll min-h-max max-h-max">
           {/* Comment Info */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-2">

@@ -12,6 +12,9 @@ import os
 import sys
 import argparse
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Add project root to path for imports
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

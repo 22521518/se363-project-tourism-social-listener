@@ -12,7 +12,23 @@ AIRFLOW_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SERVICE_ROOT")")")")"
 # Pass arguments to python script
 ARGS="$@"
 
+
 echo "Running Web Crawl Spark Consumer via Shared Library..."
+
+# Initialize Database
+# Detect venv python
+VENV_DIR="${VENV_DIR:-$SERVICE_ROOT/.venv}"
+if [[ -f "$VENV_DIR/bin/python" ]]; then
+    PYTHON_EXEC="$VENV_DIR/bin/python"
+elif [[ -f "$VENV_DIR/Scripts/python.exe" ]]; then
+    PYTHON_EXEC="$VENV_DIR/Scripts/python.exe"
+else
+    echo "Warning: Virtual environment python not found at $VENV_DIR. Using system python3."
+    PYTHON_EXEC="python3"
+fi
+
+echo "Initializing database tables..."
+"$PYTHON_EXEC" "$SCRIPT_DIR/init_db.py"
 
 python3 - <<EOF
 import sys

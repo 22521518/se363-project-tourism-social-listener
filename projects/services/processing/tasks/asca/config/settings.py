@@ -10,26 +10,40 @@ from dataclasses import dataclass
 from typing import Optional, Literal
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# Path: projects/.env (go up from asca/config -> asca -> tasks -> processing -> services -> projects)
-current_dir = Path(__file__).resolve().parent  # config/
-asca_dir = current_dir.parent  # asca/
-projects_dir = asca_dir.parents[3]  # projects/
 
-# Try loading from projects/.env
-env_path = projects_dir / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-    print(f"✅ Loaded .env from: {env_path}")
-else:
-    # Fallback: try /opt/airflow/projects/.env for Docker
-    docker_env = Path("/opt/airflow/projects/.env")
-    if docker_env.exists():
-        load_dotenv(docker_env)
-        print(f"✅ Loaded .env from: {docker_env}")
-    else:
+def load_env_files():
+    """Load .env files from multiple possible locations in order of priority."""
+    current_dir = Path(__file__).resolve().parent  # config/
+    asca_dir = current_dir.parent  # asca/
+    
+    # Possible .env locations in order of priority:
+    possible_paths = [
+        # 1. ASCA's local .env (projects/services/processing/tasks/asca/.env)
+        asca_dir / ".env",
+        # 2. projects/.env
+        asca_dir.parents[3] / ".env",  # asca -> tasks -> processing -> services -> projects
+        # 3. airflow root .env
+        asca_dir.parents[4] / ".env",  # projects -> airflow
+        # 4. Docker paths (explicit fallbacks)
+        Path("/opt/airflow/projects/services/processing/tasks/asca/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ ASCA Config: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        # Fallback to default dotenv search
         load_dotenv()
-        print("⚠️ Using default dotenv search")
+        print("⚠️ ASCA Config: Using default dotenv search")
+
+load_env_files()
 
 
 # Language detection

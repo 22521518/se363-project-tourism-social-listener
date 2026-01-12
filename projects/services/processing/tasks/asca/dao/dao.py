@@ -33,7 +33,15 @@ class ASCAExtractionDAO:
             config: Database configuration
             auto_init: If True, automatically create tables if they don't exist
         """
-        self.engine = create_engine(config.connection_string)
+        # Create engine with connection pooling limits to prevent memory leaks
+        self.engine = create_engine(
+            config.connection_string,
+            pool_size=5,           # Maximum 5 connections in the pool
+            max_overflow=10,       # Allow up to 10 additional connections
+            pool_pre_ping=True,    # Verify connections before use
+            pool_recycle=3600,     # Recycle connections after 1 hour
+            echo=False
+        )
         self.SessionLocal = sessionmaker(bind=self.engine)
         
         if auto_init:

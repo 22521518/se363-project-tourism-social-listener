@@ -16,6 +16,8 @@ import {
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { AdvancedFilters } from "../components/AdvancedFilters";
 import CommentSection from "../components/CommentSection";
+import { IntentionChart } from "../components/IntentionChart";
+import { TravelingTypeChart } from "../components/TravelingTypeChart";
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -106,16 +108,16 @@ export default function PostDetail() {
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: 6,
+            gap: 24,
           }}
         >
           {/* Sidebar - Right Column */}
           <div
             style={{
-              flex: "1 1 300px",
+              flex: "1 1 350px",
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 24,
             }}
           >
             {/* Video Player Section */}
@@ -304,7 +306,7 @@ export default function PostDetail() {
                     overflow: "auto",
                   }}
                 >
-                  {data.tags.map((tag, index) => (
+                  {data.tags.map((tag: string, index: number) => (
                     <span
                       key={index}
                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm"
@@ -395,6 +397,12 @@ export default function PostDetail() {
                 </div>
               </div>
             </div>
+
+            {/* Intention Analysis */}
+            {id && <IntentionChart videoId={id} />}
+
+            {/* Traveling Type Analysis */}
+            {id && <TravelingTypeChart videoId={id} />}
 
             {/* Watch on YouTube Button */}
             <a

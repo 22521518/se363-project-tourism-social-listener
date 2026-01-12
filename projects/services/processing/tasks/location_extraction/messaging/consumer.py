@@ -33,20 +33,37 @@ if str(project_root) not in sys.path:
 
 from dotenv import load_dotenv
 
-# Load environment variables from root .env
-# project_root is already defined above (5 levels up from this file)
-root_env_path = project_root / ".env"
-local_env_path = Path(__file__).resolve().parent.parent / ".env"
+# Load environment variables - try multiple paths in order of priority
+def load_env_files():
+    """Load .env files from multiple possible locations."""
+    current_file = Path(__file__).resolve()
+    
+    possible_paths = [
+        # 1. Local .env (location_extraction/.env)
+        current_file.parent.parent / ".env",
+        # 2. projects/.env
+        current_file.parents[4] / ".env",  # messaging -> location_extraction -> tasks -> processing -> services -> projects
+        # 3. airflow root .env
+        current_file.parents[5] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/processing/tasks/location_extraction/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ Location Extraction Consumer: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        load_dotenv()
+        print("⚠️ Location Extraction Consumer: Using default dotenv search")
 
-if root_env_path.exists():
-    load_dotenv(root_env_path)
-    print(f"Loaded .env from: {root_env_path}")
-elif local_env_path.exists():
-    load_dotenv(local_env_path)
-    print(f"Loaded .env from: {local_env_path}")
-else:
-    load_dotenv()
-    print("Using default dotenv search")
+load_env_files()
 
 # Configure logging
 logging.basicConfig(

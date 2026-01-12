@@ -25,3 +25,9 @@ intention_classifier/
 !README.md
 !AGENTS.md
 !USAGE.md
+
+# Ignore certificate files
+!ca.pem.example
+*.pem
+*.key
+*.crt
