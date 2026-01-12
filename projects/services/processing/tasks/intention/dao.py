@@ -215,7 +215,8 @@ class IntentionDAO:
                 unprocessed = session.query(YouTubeCommentModel).filter(
                     YouTubeCommentModel.id.notin_(processed_ids)
                 ).order_by(
-                    YouTubeCommentModel.created_at.desc()
+                    YouTubeCommentModel.created_at.desc(),
+                    YouTubeCommentModel.id.desc(),
                 ).limit(limit).offset(offset).all()
                 
                 return [

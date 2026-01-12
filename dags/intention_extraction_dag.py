@@ -43,7 +43,7 @@ with DAG(
     'intention_extraction_dag',
     default_args=default_args,
     description='Run Intention Extraction Consumer',
-    schedule_interval=timedelta(minutes=60),
+    schedule_interval=timedelta(days=1),
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['intention', 'extraction'],

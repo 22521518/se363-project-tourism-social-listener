@@ -105,23 +105,27 @@ export const SENTIMENT_BG: Record<string, string> = {
 };
 
 export const INTENTION_COLORS: Record<string, string> = {
-  QUESTION: '#3b82f6',
-  FEEDBACK: '#8b5cf6',
-  COMPLAINT: '#ef4444',
-  SUGGESTION: '#f59e0b',
-  PRAISE: '#22c55e',
-  REQUEST: '#06b6d4',
-  DISCUSSION: '#6366f1',
-  SPAM: '#9ca3af',
-  OTHER: '#6b7280',
+  QUESTION: "#3b82f6",
+  FEEDBACK: "#10b981",
+  COMPLAINT: "#f59e0b",
+  SUGGESTION: "#8b5cf6",
+  PRAISE: "#ec4899",
+  REQUEST: "#06b6d4",
+  DISCUSSION: "#f97316",
+  SPAM: "#ef4444",
+  OTHER: "#6b7280",
 };
 
 export const TRAVEL_TYPE_COLORS: Record<string, string> = {
-  SOLO: '#3b82f6',
-  COUPLE: '#ec4899',
-  FAMILY: '#22c55e',
-  FRIENDS: '#f59e0b',
-  BUSINESS: '#6366f1',
-  GROUP: '#8b5cf6',
-  OTHER: '#6b7280',
+  BUSINESS: "#3b82f6",
+  LEISURE: "#10b981",
+  ADVENTURE: "#f59e0b",
+  BACKPACKING: "#8b5cf6",
+  LUXURY: "#ec4899",
+  BUDGET: "#06b6d4",
+  SOLO: "#06b6d4",
+  GROUP: "#f97316",
+  FAMILY: "#ef4444",
+  ROMANTIC: "#9c032e",
+  OTHER: "#6b7280",
 };

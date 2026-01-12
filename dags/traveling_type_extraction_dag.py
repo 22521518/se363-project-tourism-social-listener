@@ -44,7 +44,7 @@ with DAG(
     'traveling_type_extraction_dag',
     default_args=default_args,
     description='Run Traveling Type Extraction Consumer',
-    schedule_interval=timedelta(minutes=60),
+    schedule_interval=timedelta(days=1),
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['traveling_type', 'extraction'],
