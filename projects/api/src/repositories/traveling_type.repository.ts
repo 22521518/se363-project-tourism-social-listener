@@ -37,7 +37,7 @@ export class TravelingTypeRepository {
      
 
     `;
-    const rows = await query<RawTravelingTypeRow>(sql,[id]);
+    const rows = await query<RawTravelingTypeRow>(sql, [id]);
     return rows.map((row) => this.mapToEntity(row));
   }
 
@@ -51,7 +51,7 @@ export class TravelingTypeRepository {
       source_type: row.source_type,
       raw_text: row.raw_text,
       traveling_type: row.traveling_type,
-      created_at: row.created_at.toISOString(),
+      created_at: new Date(row.created_at).toISOString(),
     };
   }
 }

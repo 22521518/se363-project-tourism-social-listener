@@ -22,5 +22,9 @@ source "$VENV_DIR/bin/activate"
 # Set PYTHONPATH
 export PYTHONPATH="$AIRFLOW_ROOT"
 
+
+echo "Initializing database tables..."
+python "$SCRIPT_DIR/init_db.py"
+
 echo "Running web crawl service..."
 python "$MAIN_SCRIPT" "$@"

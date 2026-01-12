@@ -14,13 +14,9 @@ services:
       - "0.0.0.0"
     ports:
       - "8502:8502"
+    env_file:
+      - ./projects/services/ingestion/youtube/.env
     environment:
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=airflow
-      - DB_USER=airflow
-      - DB_PASSWORD=airflow
       - PYTHONPATH=/opt/airflow
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}/projects:/opt/airflow/projects

@@ -4,10 +4,38 @@ Uses Pydantic Settings for environment variable management.
 """
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def get_env_file_paths() -> List[str]:
+    """Get list of .env file paths in order of priority."""
+    current_dir = Path(__file__).resolve().parent  # config/
+    location_extraction_dir = current_dir.parent  # location_extraction/
+    
+    possible_paths = [
+        # 1. Local .env (projects/services/processing/tasks/location_extraction/.env)
+        location_extraction_dir / ".env",
+        # 2. projects/.env
+        location_extraction_dir.parents[3] / ".env",
+        # 3. airflow root .env
+        location_extraction_dir.parents[4] / ".env",
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/processing/tasks/location_extraction/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    # Return the first existing path, or fallback to default
+    for path in possible_paths:
+        if path.exists():
+            print(f"✅ Location Extraction Config: Using .env from: {path}")
+            return str(path)
+    
+    print("⚠️ Location Extraction Config: No .env file found, using defaults")
+    return str(possible_paths[0])  # Return first path as default
 
 
 class LLMProvider(str, Enum):
@@ -24,7 +52,7 @@ class Settings(BaseSettings):
     """
     
     model_config = SettingsConfigDict(
-        env_file=str(Path(__file__).parent.parent / ".env"),
+        env_file=get_env_file_paths(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"

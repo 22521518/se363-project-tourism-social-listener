@@ -2,12 +2,43 @@
 # Centralized configuration loading from environment variables
 
 import os
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+
+def load_env_files():
+    """Load .env files from multiple possible locations in order of priority."""
+    current_file = Path(__file__).resolve()
+    youtube_dir = current_file.parent  # youtube/
+    
+    possible_paths = [
+        # 1. Local .env (youtube/.env)
+        youtube_dir / ".env",
+        # 2. projects/.env
+        youtube_dir.parents[2] / ".env",  # youtube -> ingestion -> services -> projects
+        # 3. airflow root .env
+        youtube_dir.parents[3] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/ingestion/youtube/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ YouTube Config: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        load_dotenv()
+        print("⚠️ YouTube Config: Using default dotenv search")
+
+load_env_files()
 
 
 @dataclass(frozen=True)

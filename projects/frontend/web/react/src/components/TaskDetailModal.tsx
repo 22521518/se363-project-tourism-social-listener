@@ -116,7 +116,7 @@ export function TaskDetailModal({ item, onClose }: TaskDetailModalProps) {
       />
       
       {/* Modal */}
-      <div style={{ width: '700px', maxHeight: '500px' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div style={{ width: '50vw', height: '70vh' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-2">

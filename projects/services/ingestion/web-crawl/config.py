@@ -4,12 +4,43 @@ Web Crawl Configuration - Centralized configuration loading from environment var
 Following the YouTube module pattern for consistency.
 """
 import os
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+
+def load_env_files():
+    """Load .env files from multiple possible locations in order of priority."""
+    current_file = Path(__file__).resolve()
+    webcrawl_dir = current_file.parent  # web-crawl/
+    
+    possible_paths = [
+        # 1. Local .env (web-crawl/.env)
+        webcrawl_dir / ".env",
+        # 2. projects/.env
+        webcrawl_dir.parents[2] / ".env",  # web-crawl -> ingestion -> services -> projects
+        # 3. airflow root .env
+        webcrawl_dir.parents[3] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/ingestion/web-crawl/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ Web Crawl Config: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        load_dotenv()
+        print("⚠️ Web Crawl Config: Using default dotenv search")
+
+load_env_files()
 
 
 @dataclass(frozen=True)

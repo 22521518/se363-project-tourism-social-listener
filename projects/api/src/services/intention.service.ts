@@ -3,6 +3,7 @@ import {
   CATEGORY_COLORS,
   IntentionStats,
   IntentionType,
+  IntentionExtraction,
 } from "../entities/intention.entity";
 
 export class IntentionService {
@@ -164,6 +165,10 @@ export class IntentionService {
     ];
 
     return stats.sort((a, b) => b.value - a.value);
+  }
+
+  async getVideoIntentions(id: string): Promise<IntentionExtraction[]> {
+    return intentionRepository.findByVideo(id);
   }
 }
 

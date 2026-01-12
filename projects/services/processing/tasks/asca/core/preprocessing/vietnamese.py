@@ -431,9 +431,33 @@ class VietnameseTextProcessor(TextProcessor):
                 return text
     
     def close(self):
-        """Close VnCoreNLP if initialized."""
+        """Close VnCoreNLP and forcefully kill the Java subprocess."""
         if self._word_segmenter and self._word_segmenter != "pyvi":
             try:
+                # First try the standard close method
                 self._word_segmenter.close()
-            except:
-                pass
+                print("✅ VnCoreNLP close() called")
+            except Exception as e:
+                print(f"⚠️ Error during VnCoreNLP close(): {e}")
+            
+            # Forcefully kill the Java subprocess if it exists
+            try:
+                if hasattr(self._word_segmenter, '_process') and self._word_segmenter._process:
+                    proc = self._word_segmenter._process
+                    if proc.poll() is None:  # Still running
+                        print(f"🔪 Forcefully killing VnCoreNLP Java process (PID: {proc.pid})...")
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=5)
+                            print("✅ VnCoreNLP process terminated gracefully")
+                        except:
+                            # Force kill if terminate doesn't work
+                            proc.kill()
+                            proc.wait()
+                            print("✅ VnCoreNLP process killed forcefully")
+            except Exception as e:
+                print(f"⚠️ Error killing VnCoreNLP process: {e}")
+            
+            # Clear the reference
+            self._word_segmenter = None
+            print("✅ VnCoreNLP resources released")

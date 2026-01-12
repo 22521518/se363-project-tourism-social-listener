@@ -18,15 +18,38 @@ sys.path.insert(0, current_dir)
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env from root project directory (4 levels up from web-crawl)
-# web-crawl -> ingestion -> services -> projects -> airflow (root)
-root_env_path = Path(current_dir).parents[3] / ".env"
-if root_env_path.exists():
-    load_dotenv(root_env_path)
-    print(f"[INFO] Loaded .env from: {root_env_path}")
-else:
-    load_dotenv()
-    print(f"[INFO] Using default .env search (root not found at {root_env_path})")
+# Load environment variables - try multiple paths in order of priority
+def load_env_files():
+    """Load .env files from multiple possible locations."""
+    current_file = Path(__file__).resolve()
+    webcrawl_dir = current_file.parent  # web-crawl/
+    
+    possible_paths = [
+        # 1. Local .env (web-crawl/.env)
+        webcrawl_dir / ".env",
+        # 2. projects/.env
+        webcrawl_dir.parents[2] / ".env",  # web-crawl -> ingestion -> services -> projects
+        # 3. airflow root .env
+        webcrawl_dir.parents[3] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/ingestion/web-crawl/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ Web Crawl Main: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        load_dotenv()
+        print("⚠️ Web Crawl Main: Using default dotenv search")
+
+load_env_files()
 
 from core import WebCrawlService, DuplicateUrlError
 from messaging.producer import WebCrawlKafkaProducer

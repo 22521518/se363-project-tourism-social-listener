@@ -2,6 +2,7 @@ import { travelingTypeRepository } from "../repositories/traveling_type.reposito
 import {
   TravelingTypeStats,
   TravelingType,
+  TravelingTypeExtraction,
 } from "../entities/traveling_type.entity";
 import { CATEGORY_COLORS } from "../entities/traveling_type.entity";
 
@@ -182,6 +183,10 @@ export class TravelingTypeService {
     ];
 
     return stats.sort((a, b) => b.value - a.value);
+  }
+
+  async getVideoTravelingTypes(id: string): Promise<TravelingTypeExtraction[]> {
+    return travelingTypeRepository.findByVideo(id);
   }
 }
 

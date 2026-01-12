@@ -50,7 +50,7 @@ export class IntentionRepository {
       source_type: row.source_type,
       raw_text: row.raw_text,
       intention_type: row.intention_type,
-      created_at: row.created_at.toISOString(),
+      created_at: new Date(row.created_at).toISOString(),
     };
   }
 }

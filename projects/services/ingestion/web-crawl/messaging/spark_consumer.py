@@ -36,12 +36,37 @@ if str(service_root) not in sys.path:
 
 from dotenv import load_dotenv
 
-# Load environment variables
-env_path = service_root / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    load_dotenv()
+# Load environment variables - try multiple paths in order of priority
+def load_env_files():
+    """Load .env files from multiple possible locations."""
+    current_file = Path(__file__).resolve()
+    
+    possible_paths = [
+        # 1. Local .env (web-crawl/.env)
+        current_file.parent.parent / ".env",
+        # 2. projects/.env
+        current_file.parents[3] / ".env",  # messaging -> web-crawl -> ingestion -> services -> projects
+        # 3. airflow root .env
+        current_file.parents[4] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/projects/services/ingestion/web-crawl/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ Web Crawl Spark Consumer: Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        load_dotenv()
+        print("⚠️ Web Crawl Spark Consumer: Using default dotenv search")
+
+load_env_files()
 
 # Configure logging
 logging.basicConfig(

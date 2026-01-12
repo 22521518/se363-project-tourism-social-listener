@@ -125,6 +125,7 @@ if '_db_initialized' not in st.session_state:
     initialize_database()
 
 
+@st.cache_data(ttl=60)
 def load_statistics():
     """Load overall statistics."""
     engine = get_engine()
@@ -165,6 +166,7 @@ def load_statistics():
         return {"total": 0, "completed": 0, "failed": 0, "pending": 0, "content_types": pd.DataFrame()}
 
 
+@st.cache_data(ttl=60)
 def load_recent_crawls(limit: int = 20):
     """Load recent crawl history."""
     engine = get_engine()
@@ -190,6 +192,7 @@ def load_recent_crawls(limit: int = 20):
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=60)
 def load_crawl_details(request_id: str):
     """Load details for a specific crawl."""
     engine = get_engine()
@@ -321,21 +324,10 @@ def render_dashboard():
         st.info("No crawls found")
 
 
-@st.fragment
-def render_history():
-    """Render the history tab."""
-    st.header("📜 Crawl History")
-    
-    # Filters
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        status_filter = st.selectbox("Status", ["All", "COMPLETED", "FAILED", "PENDING", "IN_PROGRESS"])
-    with col2:
-        content_filter = st.selectbox("Content Type", ["All", "forum", "review", "blog", "agency", "auto"])
-    with col3:
-        limit = st.number_input("Limit", min_value=10, max_value=500, value=50)
-    
-    # Load data with filters
+
+@st.cache_data(ttl=60)
+def load_filtered_history(status_filter: str, content_filter: str, limit: int):
+    """Load history with filters."""
     engine = get_engine()
     try:
         with engine.connect() as conn:
@@ -351,6 +343,8 @@ def render_history():
                 LEFT JOIN crawl_result r ON h.id = r.crawl_history_id
                 WHERE 1=1
             """
+            # Helper to effectively ignore 'All' filters in SQL construction
+            # But since we cache based on args, passing "All" is fine, we just handle logic here
             if status_filter != "All":
                 query += f" AND h.status = '{status_filter}'"
             if content_filter != "All":
@@ -358,10 +352,30 @@ def render_history():
             
             query += f" ORDER BY h.crawl_time DESC LIMIT {limit}"
             
-            df = pd.read_sql(text(query), conn)
+            return pd.read_sql(text(query), conn)
     except Exception as e:
-        st.error(f"Query error: {e}")
-        df = pd.DataFrame()
+        # We can't use st.error here easily if we want to return a clean DataFrame
+        # ideally we return empty DF and let caller handle, or just return empty
+        print(f"Query error: {e}") 
+        return pd.DataFrame()
+
+
+@st.fragment
+def render_history():
+    """Render the history tab."""
+    st.header("📜 Crawl History")
+    
+    # Filters
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        status_filter = st.selectbox("Status", ["All", "COMPLETED", "FAILED", "PENDING", "IN_PROGRESS"])
+    with col2:
+        content_filter = st.selectbox("Content Type", ["All", "forum", "review", "blog", "agency", "auto"])
+    with col3:
+        limit = st.number_input("Limit", min_value=10, max_value=500, value=50)
+    
+    # Load data with filters
+    df = load_filtered_history(status_filter, content_filter, limit)
     
     if not df.empty:
         # Show as table

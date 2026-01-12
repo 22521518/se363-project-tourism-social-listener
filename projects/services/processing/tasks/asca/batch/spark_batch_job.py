@@ -25,6 +25,9 @@ Environment variables:
 
 import os
 import sys
+import gc
+import signal
+import atexit
 import logging
 import argparse
 from typing import Dict, Any, Optional, Tuple
@@ -32,9 +35,39 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
-# Load environment variables from root
-env_path = Path(__file__).resolve().parents[6] / ".env"
-load_dotenv(env_path)
+# Load environment variables - try multiple paths in order of priority
+def load_env_files():
+    """Load .env files from multiple possible locations."""
+    current_file = Path(__file__).resolve()
+    
+    # Possible .env locations in order of priority:
+    possible_paths = [
+        # 1. ASCA's local .env (projects/services/processing/tasks/asca/.env)
+        current_file.parent.parent / ".env",
+        # 2. projects/.env
+        current_file.parents[4] / ".env",  # batch -> asca -> tasks -> processing -> services -> projects
+        # 3. airflow root .env (for local development)
+        current_file.parents[5] / ".env",  # projects -> airflow
+        # 4. Docker paths
+        Path("/opt/airflow/.env"),
+        Path("/opt/airflow/projects/.env"),
+        Path("/opt/airflow/projects/services/processing/tasks/asca/.env"),
+    ]
+    
+    loaded = False
+    for env_path in possible_paths:
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
+            print(f"✅ Loaded .env from: {env_path}")
+            loaded = True
+            break
+    
+    if not loaded:
+        # Fallback to default dotenv search
+        load_dotenv()
+        print("⚠️ Using default dotenv search")
+
+load_env_files()
 
 # Configure logging
 logging.basicConfig(
@@ -54,7 +87,6 @@ def get_db_config() -> Dict[str, Any]:
         "password": os.getenv("DB_PASSWORD", "airflow"),
     }
 
-    logger.info(f"Environment variables: {os.getenv()}")
     logger.info(f"Database: {env_dict['host']}:{env_dict['port']}/{env_dict['database']}")
 
     return env_dict
@@ -67,13 +99,15 @@ def get_jdbc_url(config: Dict[str, Any]) -> str:
 
 def create_extraction_pipeline():
     """
-    Create the ASCA extraction pipeline.
+    Get the singleton ASCA extraction pipeline instance.
+    
+    Uses the singleton pattern to ensure only ONE VnCoreNLP server runs.
     """
     try:
-        from projects.services.processing.tasks.asca.pipelines.asca_pipeline import ASCAExtractionPipeline
-        return ASCAExtractionPipeline()
+        from projects.services.processing.tasks.asca.pipelines.asca_pipeline import get_pipeline_instance
+        return get_pipeline_instance()
     except Exception as e:
-        logger.error(f"Could not create ASCA pipeline: {e}")
+        logger.error(f"Could not get ASCA pipeline instance: {e}")
         return None
 
 
@@ -115,8 +149,8 @@ def main():
     parser.add_argument(
         "--max_workers",
         type=int,
-        default=4,
-        help="Maximum concurrent threads for ASCA processing (default: 4)"
+        default=2,
+        help="Maximum concurrent threads for ASCA processing (default: 2)"
     )
     
     args = parser.parse_args()
@@ -145,6 +179,44 @@ def main():
     logger.info(f"Batch size: {args.batch_size}")
     logger.info(f"Max workers: {args.max_workers}")
     logger.info(f"Spark Application ID: {spark.sparkContext.applicationId}")
+    
+    pipeline = None  # Initialize pipeline variable for cleanup in finally block
+    
+    def cleanup_resources():
+        """Cleanup function to release all resources."""
+        nonlocal pipeline, spark
+        logger.info("🧹 Cleaning up resources...")
+        
+        # Clean up ASCA pipeline (including VnCoreNLP server)
+        if pipeline is not None:
+            try:
+                logger.info("Closing ASCA pipeline (including VnCoreNLP server)...")
+                pipeline.close()
+                logger.info("✅ ASCA pipeline closed successfully.")
+            except Exception as e:
+                logger.warning(f"⚠️ Error closing ASCA pipeline: {e}")
+        
+        # Stop Spark session
+        try:
+            if spark is not None:
+                spark.stop()
+                logger.info("✅ Spark session stopped.")
+        except Exception as e:
+            logger.warning(f"⚠️ Error stopping Spark: {e}")
+    
+    def signal_handler(signum, frame):
+        """Handle termination signals gracefully."""
+        sig_name = signal.Signals(signum).name
+        logger.info(f"⚠️ Received signal {sig_name}, initiating graceful shutdown...")
+        cleanup_resources()
+        sys.exit(128 + signum)
+    
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Also register atexit for cleanup
+    atexit.register(cleanup_resources)
     
     try:
         # Get database config
@@ -287,11 +359,13 @@ def main():
         # Process records in batches using ThreadPoolExecutor
         logger.info(f"Processing with {args.max_workers} worker threads...")
         
+        total_batches = (len(all_records) + args.batch_size - 1) // args.batch_size
+        
         for i in range(0, len(all_records), args.batch_size):
             batch = all_records[i:i + args.batch_size]
             batch_num = (i // args.batch_size) + 1
             
-            logger.info(f"Processing batch {batch_num} ({len(batch)} records)...")
+            logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} records)...")
             
             # Use ThreadPoolExecutor for concurrent processing
             # VnCoreNLP HTTP server handles concurrent requests - the Python client is thread-safe
@@ -306,8 +380,24 @@ def main():
                         if error_msg:
                             logger.error(error_msg)
                         failed_count += 1
+                
+                # Clear futures dictionary to release references
+                futures.clear()
+            
+            # Explicit memory cleanup after each batch
+            del batch
+            
+            # Run garbage collection every 10 batches to reclaim memory
+            if batch_num % 10 == 0:
+                gc.collect()
+                logger.info(f"🧹 GC collected after batch {batch_num}")
             
             logger.info(f"Batch {batch_num} complete: {processed_count} processed, {failed_count} failed")
+        
+        # Final cleanup - release all_records
+        del all_records
+        gc.collect()
+        logger.info("🧹 Final GC collected after all batches")
         
         # Summary
         logger.info("=" * 60)
@@ -326,8 +416,13 @@ def main():
         logger.error(f"Job failed with error: {e}", exc_info=True)
         raise
     finally:
-        spark.stop()
-        logger.info("Spark session stopped.")
+        # Unregister atexit to avoid double cleanup
+        try:
+            atexit.unregister(cleanup_resources)
+        except:
+            pass
+        # Perform cleanup
+        cleanup_resources()
 
 
 if __name__ == "__main__":

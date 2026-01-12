@@ -27,12 +27,7 @@ import sys
 import logging
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, ".env")
-load_dotenv(env_path)
-
-# Import shared utilities
+# Import shared utilities (this also loads the correct .env files)
 from dag_utils import get_db_env, log_database_connection
 
 # ============================================================================
