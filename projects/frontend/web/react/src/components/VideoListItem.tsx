@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Play,
   MessageCircle,
@@ -16,7 +16,7 @@ import {
   Loader2,
   X,
   AlertCircle,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   YouTubeVideoWithStats,
   YouTubeCommentWithStats,
@@ -24,8 +24,8 @@ import {
   SENTIMENT_BG,
   INTENTION_COLORS,
   TRAVEL_TYPE_COLORS,
-} from '../types/video_with_stats';
-import { useCommentsWithStats } from '../hooks/useCommentsWithStats';
+} from "../types/video_with_stats";
+import { useCommentsWithStats } from "../hooks/useCommentsWithStats";
 
 interface VideoListItemProps {
   video: YouTubeVideoWithStats;
@@ -40,15 +40,24 @@ export function VideoListItem({ video }: VideoListItemProps) {
   const { stats } = video;
 
   // Calculate sentiment percentage
-  const totalSentiment = stats.sentiment.positive + stats.sentiment.negative + stats.sentiment.neutral;
-  const positivePercent = totalSentiment > 0 ? Math.round((stats.sentiment.positive / totalSentiment) * 100) : 0;
-  const negativePercent = totalSentiment > 0 ? Math.round((stats.sentiment.negative / totalSentiment) * 100) : 0;
+  const totalSentiment =
+    stats.sentiment.positive +
+    stats.sentiment.negative +
+    stats.sentiment.neutral;
+  const positivePercent =
+    totalSentiment > 0
+      ? Math.round((stats.sentiment.positive / totalSentiment) * 100)
+      : 0;
+  const negativePercent =
+    totalSentiment > 0
+      ? Math.round((stats.sentiment.negative / totalSentiment) * 100)
+      : 0;
 
   return (
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {/* Video Header - Clickable */}
-        <div 
+        <div
           className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => setShowDetailModal(true)}
         >
@@ -70,12 +79,14 @@ export function VideoListItem({ video }: VideoListItemProps) {
 
             {/* Video Info */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">{video.title}</h3>
+              <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">
+                {video.title}
+              </h3>
               <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
                 <span className="font-medium">{video.channel.title}</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {new Date(video.published_at).toLocaleDateString('vi-VN')}
+                  {new Date(video.published_at).toLocaleDateString("vi-VN")}
                 </span>
                 {video.view_count && (
                   <span className="flex items-center gap-1">
@@ -95,7 +106,7 @@ export function VideoListItem({ video }: VideoListItemProps) {
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{stats.processed_count} processed</span>
                 </div>
-                
+
                 {/* Sentiment Summary */}
                 {totalSentiment > 0 && (
                   <div className="flex items-center gap-2">
@@ -109,7 +120,9 @@ export function VideoListItem({ video }: VideoListItemProps) {
                 )}
 
                 {/* Click hint */}
-                <span className="text-xs text-gray-400 ml-auto">Click để xem chi tiết</span>
+                <span className="text-xs text-gray-400 ml-auto">
+                  Click để xem chi tiết
+                </span>
               </div>
             </div>
           </div>
@@ -124,7 +137,10 @@ export function VideoListItem({ video }: VideoListItemProps) {
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {stats.top_locations.slice(0, 3).map((loc, i) => (
-                    <span key={i} className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                    <span
+                      key={i}
+                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                    >
                       {loc.name} ({loc.count})
                     </span>
                   ))}
@@ -142,10 +158,12 @@ export function VideoListItem({ video }: VideoListItemProps) {
                   {stats.top_intentions.slice(0, 2).map((item, i) => (
                     <span
                       key={i}
-                      className="text-xs px-1.5 py-0.5 rounded"
+                      className="text-xs px-2 py-1 rounded"
                       style={{
-                        backgroundColor: `${INTENTION_COLORS[item.name] || '#6b7280'}20`,
-                        color: INTENTION_COLORS[item.name] || '#6b7280',
+                        backgroundColor: `${
+                          INTENTION_COLORS[item.name] || "#6b7280"
+                        }20`,
+                        color: INTENTION_COLORS[item.name] || "#6b7280",
                       }}
                     >
                       {item.name} ({item.count})
@@ -165,10 +183,12 @@ export function VideoListItem({ video }: VideoListItemProps) {
                   {stats.top_travel_types.slice(0, 2).map((item, i) => (
                     <span
                       key={i}
-                      className="text-xs px-1.5 py-0.5 rounded"
+                      className="text-xs px-2 py-1 rounded"
                       style={{
-                        backgroundColor: `${TRAVEL_TYPE_COLORS[item.name] || '#6b7280'}20`,
-                        color: TRAVEL_TYPE_COLORS[item.name] || '#6b7280',
+                        backgroundColor: `${
+                          TRAVEL_TYPE_COLORS[item.name] || "#6b7280"
+                        }20`,
+                        color: TRAVEL_TYPE_COLORS[item.name] || "#6b7280",
                       }}
                     >
                       {item.name} ({item.count})
@@ -193,7 +213,9 @@ export function VideoListItem({ video }: VideoListItemProps) {
                   />
                   <div
                     className="bg-gray-400"
-                    style={{ width: `${100 - positivePercent - negativePercent}%` }}
+                    style={{
+                      width: `${100 - positivePercent - negativePercent}%`,
+                    }}
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -211,8 +233,12 @@ export function VideoListItem({ video }: VideoListItemProps) {
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full px-4 py-2 flex items-center justify-center gap-2 text-blue-600 hover:bg-blue-50 transition-colors text-sm border-t border-gray-100"
         >
-          {isExpanded ? 'Hide Comments' : 'Show Comments'}
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {isExpanded ? "Hide Comments" : "Show Comments"}
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
         </button>
 
         {/* Expanded Comments */}
@@ -221,7 +247,10 @@ export function VideoListItem({ video }: VideoListItemProps) {
 
       {/* Video Detail Modal */}
       {showDetailModal && (
-        <VideoDetailModal video={video} onClose={() => setShowDetailModal(false)} />
+        <VideoDetailModal
+          video={video}
+          onClose={() => setShowDetailModal(false)}
+        />
       )}
     </>
   );
@@ -238,26 +267,66 @@ function VideoDetailModal({
   onClose: () => void;
 }) {
   const { stats } = video;
-  const totalSentiment = stats.sentiment.positive + stats.sentiment.negative + stats.sentiment.neutral;
-  const positivePercent = totalSentiment > 0 ? Math.round((stats.sentiment.positive / totalSentiment) * 100) : 0;
-  const negativePercent = totalSentiment > 0 ? Math.round((stats.sentiment.negative / totalSentiment) * 100) : 0;
+  const totalSentiment =
+    stats.sentiment.positive +
+    stats.sentiment.negative +
+    stats.sentiment.neutral;
+  const positivePercent =
+    totalSentiment > 0
+      ? Math.round((stats.sentiment.positive / totalSentiment) * 100)
+      : 0;
+  const negativePercent =
+    totalSentiment > 0
+      ? Math.round((stats.sentiment.negative / totalSentiment) * 100)
+      : 0;
   const neutralPercent = 100 - positivePercent - negativePercent;
 
   return (
     <div
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "#00000080",
+      }}
       className="z-50 flex items-center justify-center"
     >
-
       {/* Modal */}
-      <div style={{ width: '70vw', height: '70vh' }} className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex-col mx-12 my-12">
+      <div
+        style={{
+          width: "70vw",
+          maxHeight: "70vh",
+          zIndex: 50,
+          overflow: "auto",
+        }}
+        className=" bg-white shadow-sm  border rounded  flex-col mx"
+      >
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div
+          style={{
+            padding: "4px 8px",
+            position: "sticky",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+          className="flex-shrink-0 flex items-center justify-between border-b border-gray-200 bg-white"
+        >
           <div className="flex items-center gap-2">
             <Play className="w-5 h-5 text-blue-600" />
-            <h2 className="font-semibold text-gray-900">Thống kê xử lý Video</h2>
+            <h2
+              style={{
+                fontWeight: 550,
+                fontSize: 20,
+              }}
+              className="text-gray-900"
+            >
+              Thống kê xử lý Video
+            </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
           >
@@ -278,12 +347,21 @@ function VideoDetailModal({
                 />
               )}
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">{video.title}</h3>
+                <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">
+                  {video.title}
+                </h3>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                   <span>📺 {video.channel.title}</span>
-                  <span>📅 {new Date(video.published_at).toLocaleDateString('vi-VN')}</span>
-                  {video.view_count && <span>👁 {video.view_count.toLocaleString()} views</span>}
-                  {video.like_count && <span>👍 {video.like_count.toLocaleString()} likes</span>}
+                  <span>
+                    📅{" "}
+                    {new Date(video.published_at).toLocaleDateString("vi-VN")}
+                  </span>
+                  {video.view_count && (
+                    <span>👁 {video.view_count.toLocaleString()} views</span>
+                  )}
+                  {video.like_count && (
+                    <span>👍 {video.like_count.toLocaleString()} likes</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -291,24 +369,37 @@ function VideoDetailModal({
 
           {/* Processing Overview */}
           <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-3">📊 Tổng quan xử lý</h4>
+            <h4 className="font-medium text-gray-900 mb-3">
+              📊 Tổng quan xử lý
+            </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{stats.total_comments}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {stats.total_comments}
+                </div>
                 <div className="text-xs text-gray-500">Tổng comments</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.processed_count}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.processed_count}
+                </div>
                 <div className="text-xs text-gray-500">Đã xử lý</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {stats.total_comments > 0 ? Math.round((stats.processed_count / stats.total_comments) * 100) : 0}%
+                  {stats.total_comments > 0
+                    ? Math.round(
+                        (stats.processed_count / stats.total_comments) * 100
+                      )
+                    : 0}
+                  %
                 </div>
                 <div className="text-xs text-gray-500">Tỷ lệ hoàn thành</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats.asca_categories.length}</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {stats.asca_categories.length}
+                </div>
                 <div className="text-xs text-gray-500">ASCA Categories</div>
               </div>
             </div>
@@ -323,22 +414,39 @@ function VideoDetailModal({
               {totalSentiment > 0 ? (
                 <>
                   <div className="flex h-4 rounded-full overflow-hidden bg-gray-200 mb-3">
-                    <div className="bg-green-500" style={{ width: `${positivePercent}%` }} />
-                    <div className="bg-red-500" style={{ width: `${negativePercent}%` }} />
-                    <div className="bg-gray-400" style={{ width: `${neutralPercent}%` }} />
+                    <div
+                      className="bg-green-500"
+                      style={{ width: `${positivePercent}%` }}
+                    />
+                    <div
+                      className="bg-red-500"
+                      style={{ width: `${negativePercent}%` }}
+                    />
+                    <div
+                      className="bg-gray-400"
+                      style={{ width: `${neutralPercent}%` }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">👍 Tích cực</span>
-                      <span className="font-medium text-green-600">{stats.sentiment.positive} ({positivePercent}%)</span>
+                      <span className="font-medium text-green-600">
+                        {stats.sentiment.positive} ({positivePercent}%)
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">👎 Tiêu cực</span>
-                      <span className="font-medium text-red-600">{stats.sentiment.negative} ({negativePercent}%)</span>
+                      <span className="font-medium text-red-600">
+                        {stats.sentiment.negative} ({negativePercent}%)
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">😐 Trung lập</span>
-                      <span className="font-medium text-gray-600">{stats.sentiment.neutral} ({neutralPercent}%)</span>
+                      <span className="text-sm text-gray-600">
+                        😐 Trung lập
+                      </span>
+                      <span className="font-medium text-gray-600">
+                        {stats.sentiment.neutral} ({neutralPercent}%)
+                      </span>
                     </div>
                   </div>
                 </>
@@ -361,13 +469,17 @@ function VideoDetailModal({
                       <span
                         className="text-sm px-2 py-0.5 rounded"
                         style={{
-                          backgroundColor: `${INTENTION_COLORS[item.name] || '#6b7280'}20`,
-                          color: INTENTION_COLORS[item.name] || '#6b7280',
+                          backgroundColor: `${
+                            INTENTION_COLORS[item.name] || "#6b7280"
+                          }20`,
+                          color: INTENTION_COLORS[item.name] || "#6b7280",
                         }}
                       >
                         🎯 {item.name}
                       </span>
-                      <span className="font-medium text-gray-900">{item.count}</span>
+                      <span className="font-medium text-gray-900">
+                        {item.count}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -390,13 +502,17 @@ function VideoDetailModal({
                       <span
                         className="text-sm px-2 py-0.5 rounded"
                         style={{
-                          backgroundColor: `${TRAVEL_TYPE_COLORS[item.name] || '#6b7280'}20`,
-                          color: TRAVEL_TYPE_COLORS[item.name] || '#6b7280',
+                          backgroundColor: `${
+                            TRAVEL_TYPE_COLORS[item.name] || "#6b7280"
+                          }20`,
+                          color: TRAVEL_TYPE_COLORS[item.name] || "#6b7280",
                         }}
                       >
                         ✈️ {item.name}
                       </span>
-                      <span className="font-medium text-gray-900">{item.count}</span>
+                      <span className="font-medium text-gray-900">
+                        {item.count}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -419,7 +535,9 @@ function VideoDetailModal({
                       <span className="text-sm px-2 py-0.5 rounded bg-blue-100 text-blue-700">
                         📍 {loc.name}
                       </span>
-                      <span className="font-medium text-gray-900">{loc.count}</span>
+                      <span className="font-medium text-gray-900">
+                        {loc.count}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -440,21 +558,38 @@ function VideoDetailModal({
               <div className="space-y-3">
                 {stats.asca_categories.map((cat, i) => {
                   const total = cat.positive + cat.negative + cat.neutral;
-                  const posPercent = total > 0 ? Math.round((cat.positive / total) * 100) : 0;
-                  const negPercent = total > 0 ? Math.round((cat.negative / total) * 100) : 0;
+                  const posPercent =
+                    total > 0 ? Math.round((cat.positive / total) * 100) : 0;
+                  const negPercent =
+                    total > 0 ? Math.round((cat.negative / total) * 100) : 0;
                   return (
                     <div key={i} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">{cat.category}</span>
-                        <span className="text-xs text-gray-500">Total: {total}</span>
+                        <span className="font-medium text-gray-900">
+                          {cat.category}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Total: {total}
+                        </span>
                       </div>
                       <div className="flex h-2 rounded-full overflow-hidden bg-gray-200 mb-2">
-                        <div className="bg-green-500" style={{ width: `${posPercent}%` }} />
-                        <div className="bg-red-500" style={{ width: `${negPercent}%` }} />
-                        <div className="bg-gray-400" style={{ width: `${100 - posPercent - negPercent}%` }} />
+                        <div
+                          className="bg-green-500"
+                          style={{ width: `${posPercent}%` }}
+                        />
+                        <div
+                          className="bg-red-500"
+                          style={{ width: `${negPercent}%` }}
+                        />
+                        <div
+                          className="bg-gray-400"
+                          style={{ width: `${100 - posPercent - negPercent}%` }}
+                        />
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-green-600">👍 {cat.positive}</span>
+                        <span className="text-green-600">
+                          👍 {cat.positive}
+                        </span>
                         <span className="text-red-600">👎 {cat.negative}</span>
                         <span className="text-gray-600">😐 {cat.neutral}</span>
                       </div>
@@ -467,19 +602,19 @@ function VideoDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
+        {/* <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Đóng
           </button>
-        </div>
+        </div> */}
       </div>
-      
+
       {/* Backdrop */}
       <div
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         className="-z-40 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -491,7 +626,8 @@ function VideoDetailModal({
  * Comments section with processing badges
  */
 function CommentsSection({ videoId }: { videoId: string }) {
-  const { data, meta, loading, error, fetch, fetchMore } = useCommentsWithStats(videoId);
+  const { data, meta, loading, error, fetch, fetchMore } =
+    useCommentsWithStats(videoId);
 
   // Fetch on mount
   useEffect(() => {
@@ -537,7 +673,9 @@ function CommentsSection({ videoId }: { videoId: string }) {
           disabled={loading}
           className="w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-50"
         >
-          {loading ? 'Loading...' : `Load more (${meta.total - data.length} remaining)`}
+          {loading
+            ? "Loading..."
+            : `Load more (${meta.total - data.length} remaining)`}
         </button>
       )}
     </div>
@@ -553,20 +691,22 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
 
   return (
     <>
-      <div 
+      <div
         className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
         onClick={() => setShowModal(true)}
       >
         <div className="flex justify-between items-start gap-2 mb-2">
           <span className="text-sm font-medium text-gray-700">
-            {comment.author_name || 'Anonymous'}
+            {comment.author_name || "Anonymous"}
           </span>
           <span className="text-xs text-gray-500">
-            {new Date(comment.published_at).toLocaleDateString('vi-VN')}
+            {new Date(comment.published_at).toLocaleDateString("vi-VN")}
           </span>
         </div>
 
-        <p className="text-sm text-gray-800 mb-2 line-clamp-3">{comment.text}</p>
+        <p className="text-sm text-gray-800 mb-2 line-clamp-3">
+          {comment.text}
+        </p>
 
         {/* Processing Badges */}
         <div className="flex flex-wrap items-center gap-2">
@@ -579,9 +719,15 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
                 color: SENTIMENT_COLORS[processing.sentiment],
               }}
             >
-              {processing.sentiment === 'positive' && <ThumbsUp className="w-3 h-3" />}
-              {processing.sentiment === 'negative' && <ThumbsDown className="w-3 h-3" />}
-              {processing.sentiment === 'neutral' && <Minus className="w-3 h-3" />}
+              {processing.sentiment === "positive" && (
+                <ThumbsUp className="w-3 h-3" />
+              )}
+              {processing.sentiment === "negative" && (
+                <ThumbsDown className="w-3 h-3" />
+              )}
+              {processing.sentiment === "neutral" && (
+                <Minus className="w-3 h-3" />
+              )}
               {processing.sentiment}
             </span>
           )}
@@ -591,8 +737,10 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
             <span
               className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: `${INTENTION_COLORS[processing.intention] || '#6b7280'}20`,
-                color: INTENTION_COLORS[processing.intention] || '#6b7280',
+                backgroundColor: `${
+                  INTENTION_COLORS[processing.intention] || "#6b7280"
+                }20`,
+                color: INTENTION_COLORS[processing.intention] || "#6b7280",
               }}
             >
               🎯 {processing.intention}
@@ -604,8 +752,10 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
             <span
               className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: `${TRAVEL_TYPE_COLORS[processing.travel_type] || '#6b7280'}20`,
-                color: TRAVEL_TYPE_COLORS[processing.travel_type] || '#6b7280',
+                backgroundColor: `${
+                  TRAVEL_TYPE_COLORS[processing.travel_type] || "#6b7280"
+                }20`,
+                color: TRAVEL_TYPE_COLORS[processing.travel_type] || "#6b7280",
               }}
             >
               ✈️ {processing.travel_type}
@@ -615,18 +765,23 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
           {/* Locations */}
           {processing.locations.length > 0 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-              📍 {processing.locations.slice(0, 2).join(', ')}
+              📍 {processing.locations.slice(0, 2).join(", ")}
             </span>
           )}
 
           {/* Click hint */}
-          <span className="text-xs text-gray-400 ml-auto">Click để xem chi tiết</span>
+          <span className="text-xs text-gray-400 ml-auto">
+            Click để xem chi tiết
+          </span>
         </div>
       </div>
 
       {/* Detail Modal */}
       {showModal && (
-        <CommentDetailModal comment={comment} onClose={() => setShowModal(false)} />
+        <CommentDetailModal
+          comment={comment}
+          onClose={() => setShowModal(false)}
+        />
       )}
     </>
   );
@@ -635,21 +790,31 @@ function CommentItem({ comment }: { comment: YouTubeCommentWithStats }) {
 /**
  * Modal for displaying detailed comment processing results
  */
-function CommentDetailModal({ 
-  comment, 
-  onClose 
-}: { 
-  comment: YouTubeCommentWithStats; 
+function CommentDetailModal({
+  comment,
+  onClose,
+}: {
+  comment: YouTubeCommentWithStats;
   onClose: () => void;
 }) {
   const { processing } = comment;
-  const hasAnyProcessing = processing.sentiment || processing.intention || 
-    processing.travel_type || processing.locations.length > 0 || 
+  const hasAnyProcessing =
+    processing.sentiment ||
+    processing.intention ||
+    processing.travel_type ||
+    processing.locations.length > 0 ||
     (processing.asca_aspects && processing.asca_aspects.length > 0);
 
   return (
-    <div 
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }} 
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "#00000080",
+      }}
       className="z-50 flex items-center justify-center w-full h-full relative"
       onClick={(e) => e.stopPropagation()}
     >
@@ -659,14 +824,25 @@ function CommentDetailModal({
         className="-z-40 bg-black/50 backdrop-blur-sm bg-opacity-50 bg-gray-50"
         onClick={onClose}
       /> */}
-      
+
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden flex w-[50%] h-[70%]">
-        {/* Header */}  
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+      <div className="relative bg-white rounded border shadow-sm overflow-hidden">
+        {/* Header */}
+        <div
+          style={{
+            padding: "4px 8px",
+            position: "sticky",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+          className="bg-white flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50"
+        >
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-blue-600" />
-            <h2 className="font-semibold text-gray-900">Chi tiết xử lý Comment</h2>
+            <h2 className="font-semibold text-gray-900">
+              Chi tiết xử lý Comment
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -681,8 +857,10 @@ function CommentDetailModal({
           {/* Comment Info */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-              <span>👤 {comment.author_name || 'Anonymous'}</span>
-              <span>📅 {new Date(comment.published_at).toLocaleDateString('vi-VN')}</span>
+              <span>👤 {comment.author_name || "Anonymous"}</span>
+              <span>
+                📅 {new Date(comment.published_at).toLocaleDateString("vi-VN")}
+              </span>
             </div>
             <p className="text-sm text-gray-800">{comment.text}</p>
             {comment.like_count > 0 && (
@@ -700,72 +878,107 @@ function CommentDetailModal({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* ASCA Analysis */}
-              <div className={`p-3 rounded-lg border md:col-span-2 ${
-                processing.asca_aspects && processing.asca_aspects.length > 0
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-amber-50 border-amber-200'
-              }`}>
+              <div
+                className={`p-3 rounded-lg border md:col-span-2 ${
+                  processing.asca_aspects && processing.asca_aspects.length > 0
+                    ? "bg-green-50 border-green-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">ASCA Analysis</span>
+                    <span className="font-medium text-sm text-gray-900">
+                      ASCA Analysis
+                    </span>
                   </div>
-                  {processing.asca_aspects && processing.asca_aspects.length > 0 ? (
+                  {processing.asca_aspects &&
+                  processing.asca_aspects.length > 0 ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   ) : (
                     <AlertCircle className="w-4 h-4 text-amber-600" />
                   )}
                 </div>
-                
-                {processing.asca_aspects && processing.asca_aspects.length > 0 ? (
+
+                {processing.asca_aspects &&
+                processing.asca_aspects.length > 0 ? (
                   <div className="space-y-2">
                     {/* Summary */}
                     <div className="flex gap-4 text-xs pb-2 border-b border-gray-200">
                       <div className="flex items-center gap-1">
                         <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
                         <span className="text-gray-600">
-                          Positive: {processing.asca_aspects.filter(a => a.sentiment === 'positive').length}
+                          Positive:{" "}
+                          {
+                            processing.asca_aspects.filter(
+                              (a) => a.sentiment === "positive"
+                            ).length
+                          }
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
                         <span className="text-gray-600">
-                          Negative: {processing.asca_aspects.filter(a => a.sentiment === 'negative').length}
+                          Negative:{" "}
+                          {
+                            processing.asca_aspects.filter(
+                              (a) => a.sentiment === "negative"
+                            ).length
+                          }
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="inline-block w-2 h-2 rounded-full bg-gray-400"></span>
                         <span className="text-gray-600">
-                          Neutral: {processing.asca_aspects.filter(a => a.sentiment === 'neutral').length}
+                          Neutral:{" "}
+                          {
+                            processing.asca_aspects.filter(
+                              (a) => a.sentiment === "neutral"
+                            ).length
+                          }
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Aspect List */}
                     <div className="space-y-2">
                       {processing.asca_aspects.map((aspect, i) => (
-                        <div 
+                        <div
                           key={i}
                           className={`p-2 rounded-lg border ${
-                            aspect.sentiment === 'positive' ? 'bg-green-50 border-green-200' :
-                            aspect.sentiment === 'negative' ? 'bg-red-50 border-red-200' :
-                            'bg-gray-50 border-gray-200'
+                            aspect.sentiment === "positive"
+                              ? "bg-green-50 border-green-200"
+                              : aspect.sentiment === "negative"
+                              ? "bg-red-50 border-red-200"
+                              : "bg-gray-50 border-gray-200"
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className={`text-sm font-medium ${
-                              aspect.sentiment === 'positive' ? 'text-green-800' :
-                              aspect.sentiment === 'negative' ? 'text-red-800' :
-                              'text-gray-800'
-                            }`}>
-                              {aspect.sentiment === 'positive' ? '👍' : aspect.sentiment === 'negative' ? '👎' : '😐'}
-                              {' '}{aspect.category}
+                            <span
+                              className={`text-sm font-medium ${
+                                aspect.sentiment === "positive"
+                                  ? "text-green-800"
+                                  : aspect.sentiment === "negative"
+                                  ? "text-red-800"
+                                  : "text-gray-800"
+                              }`}
+                            >
+                              {aspect.sentiment === "positive"
+                                ? "👍"
+                                : aspect.sentiment === "negative"
+                                ? "👎"
+                                : "😐"}{" "}
+                              {aspect.category}
                             </span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              aspect.sentiment === 'positive' ? 'bg-green-200 text-green-800' :
-                              aspect.sentiment === 'negative' ? 'bg-red-200 text-red-800' :
-                              'bg-gray-200 text-gray-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                aspect.sentiment === "positive"
+                                  ? "bg-green-200 text-green-800"
+                                  : aspect.sentiment === "negative"
+                                  ? "bg-red-200 text-red-800"
+                                  : "bg-gray-200 text-gray-800"
+                              }`}
+                            >
                               {aspect.sentiment}
                             </span>
                           </div>
@@ -781,15 +994,19 @@ function CommentDetailModal({
               </div>
 
               {/* Intention */}
-              <div className={`p-3 rounded-lg border ${
-                processing.intention
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-amber-50 border-amber-200'
-              }`}>
+              <div
+                className={`p-3 rounded-lg border ${
+                  processing.intention
+                    ? "bg-green-50 border-green-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">Intention</span>
+                    <span className="font-medium text-sm text-gray-900">
+                      Intention
+                    </span>
                   </div>
                   {processing.intention ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -809,15 +1026,19 @@ function CommentDetailModal({
               </div>
 
               {/* Traveling Type */}
-              <div className={`p-3 rounded-lg border ${
-                processing.travel_type
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-amber-50 border-amber-200'
-              }`}>
+              <div
+                className={`p-3 rounded-lg border ${
+                  processing.travel_type
+                    ? "bg-green-50 border-green-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Plane className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">Traveling Type</span>
+                    <span className="font-medium text-sm text-gray-900">
+                      Traveling Type
+                    </span>
                   </div>
                   {processing.travel_type ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -837,15 +1058,19 @@ function CommentDetailModal({
               </div>
 
               {/* Locations */}
-              <div className={`p-3 rounded-lg border md:col-span-2 ${
-                processing.locations.length > 0
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-amber-50 border-amber-200'
-              }`}>
+              <div
+                className={`p-3 rounded-lg border md:col-span-2 ${
+                  processing.locations.length > 0
+                    ? "bg-green-50 border-green-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium text-sm text-gray-900">Locations</span>
+                    <span className="font-medium text-sm text-gray-900">
+                      Locations
+                    </span>
                   </div>
                   {processing.locations.length > 0 ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -856,7 +1081,10 @@ function CommentDetailModal({
                 {processing.locations.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {processing.locations.map((loc, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs"
+                      >
                         📍 {loc}
                       </span>
                     ))}
@@ -872,14 +1100,14 @@ function CommentDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
+        {/* <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Đóng
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

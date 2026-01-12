@@ -101,13 +101,13 @@ export function ProcessingStatusFilter({
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-600">Status:</span>
-        <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+        <div className="flex border border-gray-200 rounded overflow-hidden">
           {statusOptions.map(option => (
             <button
               key={option.value}
               onClick={() => onChange(option.value)}
               className={`
-                px-3 py-1.5 text-sm transition-colors
+                px-3 py-1 text-sm transition-colors
                 ${value === option.value
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'}
@@ -125,7 +125,7 @@ export function ProcessingStatusFilter({
           <select
             value={task}
             onChange={(e) => onTaskChange(e.target.value as ProcessingTask | 'all')}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+            className="px-3 py-1 text-sm border border-gray-200 rounded bg-white"
           >
             {taskOptions.map(option => (
               <option key={option.value} value={option.value}>

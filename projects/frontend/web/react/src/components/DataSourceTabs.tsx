@@ -1,6 +1,6 @@
-import { Youtube, Globe } from 'lucide-react';
+import { Youtube, Globe } from "lucide-react";
 
-export type DataSourceType = 'youtube' | 'webcrawl';
+export type DataSourceType = "youtube" | "webcrawl";
 
 interface DataSourceTabsProps {
   activeSource: DataSourceType;
@@ -10,19 +10,22 @@ interface DataSourceTabsProps {
 /**
  * Tab navigation component to switch between YouTube and Web Crawl data sources.
  */
-export function DataSourceTabs({ activeSource, onSourceChange }: DataSourceTabsProps) {
+export function DataSourceTabs({
+  activeSource,
+  onSourceChange,
+}: DataSourceTabsProps) {
   const tabs = [
     {
-      id: 'youtube' as DataSourceType,
-      label: 'YouTube Data',
+      id: "youtube" as DataSourceType,
+      label: "YouTube Data",
       icon: Youtube,
-      description: 'Videos, Comments & Channels',
+      description: "Videos, Comments & Channels",
     },
     {
-      id: 'webcrawl' as DataSourceType,
-      label: 'Web Crawl Data',
+      id: "webcrawl" as DataSourceType,
+      label: "Web Crawl Data",
       icon: Globe,
-      description: 'Reviews, Blogs & Forums',
+      description: "Reviews, Blogs & Forums",
     },
   ];
 
@@ -38,16 +41,37 @@ export function DataSourceTabs({ activeSource, onSourceChange }: DataSourceTabsP
               key={tab.id}
               onClick={() => onSourceChange(tab.id)}
               className={`
-                flex-1 flex items-center gap-3 px-4 py-3 rounded-lg transition-all
-                ${isActive 
-                  ? 'bg-blue-50 border-2 border-blue-500 text-blue-700' 
-                  : 'bg-gray-50 border-2 border-transparent text-gray-600 hover:bg-gray-100'
+                flex-1 flex items-center gap-3 rounded transition-all
+                ${
+                  isActive
+                    ? "bg-blue-50 border-2 border-blue-500 text-blue-700"
+                    : "bg-gray-50 border-2 border-transparent text-gray-600 hover:bg-gray-100"
                 }
               `}
+              style={{
+                padding: 8,
+              }}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
-              <div className="text-left">
-                <p className={`font-medium ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
+              <Icon
+                className={`w-5 h-5 ${
+                  isActive ? "text-blue-600" : "text-gray-500"
+                }`}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems:'start'
+                }}
+              >
+                <p
+                  className={`font-medium ${
+                    isActive ? "text-blue-700" : "text-gray-700"
+                  }`}
+                  style={{
+                    fontWeight: 600,
+                  }}
+                >
                   {tab.label}
                 </p>
                 <p className="text-xs text-gray-500">{tab.description}</p>
