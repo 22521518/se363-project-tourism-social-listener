@@ -4,8 +4,13 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
+# Import shared utilities
+from dag_utils import get_db_env, get_db_connection_bash_command
+
 # Load environment variables explicitly
-load_dotenv()
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, ".env")
+load_dotenv(env_path)
 
 # Define paths
 # Note: In standard Airflow Docker, dags are in /opt/airflow/dags.
@@ -21,6 +26,9 @@ PRODUCER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtub
 CONSUMER_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/run_spark_consumer.sh")
 SETUP_SCRIPT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/scripts/setup_venv.sh")
 VENV_PATH = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/youtube/.venv_unified")
+
+# Get database environment
+db_env = get_db_env()
 
 default_args = {
     'owner': 'airflow',
@@ -48,6 +56,16 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH} ",
     )
 
+    # Task 1: Log Database Connection Info
+    log_db_info = BashOperator(
+        task_id='log_db_connection',
+        bash_command=get_db_connection_bash_command("YouTube Ingestion"),
+        env={
+            **os.environ,
+            **db_env,
+        },
+    )
+
     # Task 2: Spark Consumer
     # Consumes events from Kafka and saves to Database using Spark
     run_consumer = BashOperator(
@@ -57,14 +75,10 @@ with DAG(
             **os.environ, 
             "VENV_DIR": VENV_PATH,
             "KAFKA_BOOTSTRAP_SERVERS": os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
-            "DB_HOST": os.environ.get("DB_HOST", "localhost"),
-            "DB_PORT": os.environ.get("DB_PORT", "5432"),
-            "DB_NAME": os.environ.get("DB_NAME", "airflow"),
-            "DB_USER": os.environ.get("DB_USER", "airflow"),
-            "DB_PASSWORD": os.environ.get("DB_PASSWORD", "airflow"),
+            **db_env,  # Use centralized DB env
         },
     )
 
     # Execution Flow
-    # Setup -> Consumer
-    setup_env >> run_consumer
+    # Setup -> Log DB -> Consumer
+    setup_env >> log_db_info >> run_consumer

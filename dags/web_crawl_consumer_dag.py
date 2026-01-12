@@ -9,8 +9,13 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 
+# Import shared utilities
+from dag_utils import get_db_env, get_db_connection_bash_command
+
 # Load environment variables explicitly
-load_dotenv()
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, ".env")
+load_dotenv(env_path)
 
 
 # Paths
@@ -19,6 +24,9 @@ SERVICE_ROOT = os.path.join(AIRFLOW_HOME, "projects/services/ingestion/web-crawl
 SETUP_SCRIPT = os.path.join(SERVICE_ROOT, "scripts/setup_venv.sh")
 SERVICE_SCRIPT = os.path.join(SERVICE_ROOT, "scripts/run_crawl_service.sh")
 VENV_PATH = os.path.join(SERVICE_ROOT, ".venv")
+
+# Get database environment
+db_env = get_db_env()
 
 default_args = {
     'owner': 'airflow',
@@ -45,18 +53,28 @@ with DAG(
         bash_command=f"bash {SETUP_SCRIPT} {VENV_PATH}",
     )
     
-    # Task 1: Run Consumer (processes crawl requests from Kafka)
+    # Task 1: Log Database Connection Info
+    log_db_info = BashOperator(
+        task_id='log_db_connection',
+        bash_command=get_db_connection_bash_command("Web Crawl Consumer"),
+        env={
+            **os.environ,
+            **db_env,
+        },
+    )
+    
+    # Task 2: Run Consumer (processes crawl requests from Kafka)
     run_consumer = BashOperator(
         task_id='run_consumer',
         bash_command=f"bash {SERVICE_SCRIPT} --consume",
         env={
             **os.environ,
             "VENV_DIR": VENV_PATH,
-            "KAFKA_BOOTSTRAP_SERVERS": "kafka:9092",
-            "DB_HOST": "postgres",
+            "KAFKA_BOOTSTRAP_SERVERS": os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
+            **db_env,  # Use centralized DB env
         },
         execution_timeout=timedelta(minutes=25),  # Stop before next run
     )
     
     # Execution flow
-    setup_env >> run_consumer
+    setup_env >> log_db_info >> run_consumer

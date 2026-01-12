@@ -24,7 +24,7 @@ export function AdvancedFilters({ filters, setFilters }: AdvancedFiltersProps) {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-5 h-5 text-blue-600" />
-        <span className="text-gray-900">Smart Filters</span>
+        <span className="text-gray-900">Filters</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

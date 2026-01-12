@@ -10,6 +10,7 @@ from .base import LocationExtractor
 from .llm_extractor import LLMLocationExtractor
 from .gazetteer_extractor import GazetteerLocationExtractor
 from .regex_extractor import RegexLocationExtractor
+from .ner_extractor import NERLocationExtractor
 
 try:
     from ..config import settings, LLMProvider
@@ -39,7 +40,9 @@ def get_extractor(
     Raises:
         ValueError: If extractor_type is not recognized.
     """
-    if extractor_type == "llm":
+    if extractor_type == "ner":
+        return NERLocationExtractor(model_name=model_name)
+    elif extractor_type == "llm":
         return LLMLocationExtractor(
             provider=provider or settings.llm_provider,
             api_key=api_key,
@@ -57,12 +60,9 @@ def get_default_extractor() -> LocationExtractor:
     """
     Get the default extractor based on configuration.
     
-    Returns LLM extractor if API key is available, otherwise gazetteer.
+    Returns NER extractor as default for location extraction.
     """
-    llm_extractor = LLMLocationExtractor()
-    if llm_extractor.is_available():
-        return llm_extractor
-    return GazetteerLocationExtractor()
+    return NERLocationExtractor()
 
 
 __all__ = [
@@ -70,6 +70,7 @@ __all__ = [
     "LLMLocationExtractor",
     "GazetteerLocationExtractor",
     "RegexLocationExtractor",
+    "NERLocationExtractor",
     "get_extractor",
     "get_default_extractor"
 ]

@@ -1,28 +1,13 @@
 /**
- * Location entity types matching the database schema.
+ * Location entity types matching the simplified NER output schema.
  */
-
-export type LocationType = 'country' | 'city' | 'state' | 'province' | 'landmark' | 'unknown';
 
 export interface Location {
-  name: string;
-  type: LocationType;
-  confidence: number;
-}
-
-export interface PrimaryLocation {
-  name: string;
-  confidence: number;
-}
-
-/**
- * Structure for approved extraction result stored in approved_result column.
- */
-export interface ApprovedResult {
-  locations: Location[];
-  primary_location: PrimaryLocation | null;
-  overall_score: number;
-  meta?: Record<string, unknown>;
+  word: string;
+  score: number;
+  entity_group: string;
+  start: number;
+  end: number;
 }
 
 export interface LocationExtraction {
@@ -31,10 +16,6 @@ export interface LocationExtraction {
   source_type: string;
   raw_text: string;
   locations: Location[];
-  primary_location: PrimaryLocation | null;
-  overall_score: number;
-  is_approved: boolean;
-  approved_result: ApprovedResult | null;
   created_at: string;
 }
 
@@ -43,3 +24,45 @@ export interface GeographyStats {
   value: number;
   color: string;
 }
+
+// Location Hierarchy Types
+export interface ContinentStats {
+  id: string;
+  name: string;
+  count: number;
+  countries: string[];
+  color: string;
+}
+
+export interface CountryStats {
+  id: string;
+  name: string;
+  continent: string;
+  count: number;
+  regions: string[];
+}
+
+export interface RegionStats {
+  id: string;
+  name: string;
+  country: string;
+  count: number;
+}
+
+export interface LocationHierarchyResponse {
+  continents: ContinentStats[];
+  total: number;
+}
+
+export interface CountryListResponse {
+  countries: CountryStats[];
+  continent: string;
+  total: number;
+}
+
+export interface RegionListResponse {
+  regions: RegionStats[];
+  country: string;
+  total: number;
+}
+

@@ -6,10 +6,11 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import { Compass, Loader2 } from "lucide-react";
-import { useGeographyData } from "../hooks/useGeographyData";
+import { Compass, Loader2, ChevronRight, Globe } from "lucide-react";
+import { useContinentData } from "../hooks/useLocationHierarchy";
 import { useIntentionsData } from "../hooks/useIntentionData";
 import { useTravelingTypeData } from "../hooks/useTravelingTypeData";
+import { useNavigate } from "react-router";
 
 interface TourismClassificationProps {
   filters: any;
@@ -20,12 +21,15 @@ export function TourismClassification({
   filters,
   id,
 }: TourismClassificationProps) {
-  // Fetch geography data from API
+  const navigate = useNavigate();
+  
+  // Fetch continent data from API
   const {
-    data: geoData,
-    loading: geoLoading,
-    error: geoError,
-  } = useGeographyData();
+    data: continentData,
+    total: continentTotal,
+    loading: continentLoading,
+    error: continentError,
+  } = useContinentData();
   const {
     data: intentionData,
     loading: intentionLoading,
@@ -143,47 +147,70 @@ export function TourismClassification({
           </div>
         </div>
 
-        {/* By Geography */}
+        {/* By Geography - Continents */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm text-gray-700 mb-1">By Geography</h3>
-          <p className="text-xs text-gray-500 mb-3">Origin: Vietnam</p>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-blue-500" />
+              <h3 className="text-sm text-gray-700">By Continent</h3>
+            </div>
+            <button
+              onClick={() => navigate("/geography")}
+              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              View all
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Total: {continentTotal.toLocaleString()} mentions
+          </p>
           <div className="space-y-3">
-            {geoLoading ? (
+            {continentLoading ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 <span className="ml-2 text-sm text-gray-500">Loading...</span>
               </div>
-            ) : geoError ? (
-              <div className="text-sm text-red-500 py-2">{geoError}</div>
-            ) : geoData.length === 0 ? (
+            ) : continentError ? (
+              <div className="text-sm text-red-500 py-2">{continentError}</div>
+            ) : continentData.length === 0 ? (
               <div className="text-sm text-gray-500 py-2">
-                No geography data available
+                No continent data available
               </div>
             ) : (
-              geoData.map((item) => (
-                <div key={item.name} className="space-y-1">
+              continentData.map((item) => (
+                <div
+                  key={item.id}
+                  className="space-y-1 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/geography/${item.id}`)}
+                >
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
                       <span className="text-gray-700 font-medium">
                         {item.name}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {item.name === "Domestic" && "(Vietnam)"}
-                        {item.name === "Regional" && "(South East Asia)"}
-                        {item.name === "International" && "(World)"}
+                        ({item.countries?.length || 0} countries)
                       </span>
                     </div>
-                    <span className="text-gray-600 font-semibold">
-                      {item.value.toLocaleString()}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600 font-semibold">
+                        {item.count.toLocaleString()}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="h-2 rounded-full transition-all"
                       style={{
                         width: `${
-                          (item.value /
-                            Math.max(...geoData.map((d) => d.value), 1)) *
+                          (item.count /
+                            Math.max(...continentData.map((d) => d.count), 1)) *
                           100
                         }%`,
                         backgroundColor: item.color,

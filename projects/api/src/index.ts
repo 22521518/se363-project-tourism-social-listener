@@ -9,6 +9,10 @@ import { travelingTypeRouter } from './controllers/traveling_type.controller';
 import { youtubeChannelRouter } from './controllers/youtube_channel.controller';
 import { youtubeVideoRouter } from './controllers/youtube_video.controller';
 import { youtubeCommentRouter } from './controllers/youtube_comment.controller';
+import { ascaRouter } from './controllers/asca.controller';
+import { crawlRouter } from './controllers/crawl.controller';
+import { videoWithStatsRouter } from './controllers/video_with_stats.controller';
+import { rawDataRouter } from './controllers/raw_data.controller';
 
 dotenv.config();
 
@@ -29,6 +33,10 @@ app.use('/api/traveling_types', travelingTypeRouter);
 app.use('/api/youtube_channels', youtubeChannelRouter);
 app.use('/api/youtube_videos', youtubeVideoRouter);
 app.use('/api/youtube_comments', youtubeCommentRouter);
+app.use('/api/asca', ascaRouter);
+app.use('/api/crawl_results', crawlRouter);
+app.use('/api/videos_with_stats', videoWithStatsRouter);
+app.use('/api/raw_data', rawDataRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

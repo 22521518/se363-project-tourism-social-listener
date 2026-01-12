@@ -1,5 +1,21 @@
 import { locationRepository } from '../repositories/location.repository';
-import { GeographyStats, Location } from '../entities/location.entity';
+import {
+  GeographyStats,
+  Location,
+  ContinentStats,
+  CountryStats,
+  RegionStats,
+  LocationHierarchyResponse,
+  CountryListResponse,
+  RegionListResponse,
+} from '../entities/location.entity';
+import {
+  CONTINENTS,
+  COUNTRY_REGIONS,
+  normalizeLocation,
+  getContinentForLocation,
+  getCountryForLocation,
+} from './location_hierarchy.data';
 
 /**
  * South East Asia countries and common variants (lowercase, normalized).
@@ -126,6 +142,15 @@ const CATEGORY_COLORS: Record<GeographyCategory, string> = {
   Regional: '#f59e0b',      // Orange - South East Asia
 };
 
+const CONTINENT_COLORS: Record<string, string> = {
+  asia: '#ef4444',          // Red
+  europe: '#3b82f6',        // Blue
+  north_america: '#22c55e', // Green
+  south_america: '#f59e0b', // Orange
+  africa: '#8b5cf6',        // Purple
+  oceania: '#06b6d4',       // Cyan
+};
+
 export class LocationService {
   /**
    * Aggregate locations by geography category:
@@ -159,10 +184,157 @@ export class LocationService {
   }
 
   /**
+   * Get location hierarchy by continents
+   */
+  async getContinentStats(): Promise<LocationHierarchyResponse> {
+    const locations = await locationRepository.findAllLocationsFlat();
+
+    // Count by continent
+    const countByContinent = new Map<string, number>();
+    const countriesByContinent = new Map<string, Set<string>>();
+
+    for (const loc of locations) {
+      const continent = getContinentForLocation(loc.word);
+      if (continent) {
+        countByContinent.set(continent, (countByContinent.get(continent) || 0) + 1);
+
+        const country = getCountryForLocation(loc.word);
+        if (country) {
+          if (!countriesByContinent.has(continent)) {
+            countriesByContinent.set(continent, new Set());
+          }
+          countriesByContinent.get(continent)!.add(country);
+        }
+      }
+    }
+
+    const continents: ContinentStats[] = [];
+    let total = 0;
+
+    for (const [continentKey, continentData] of Object.entries(CONTINENTS)) {
+      const count = countByContinent.get(continentKey) || 0;
+      total += count;
+
+      continents.push({
+        id: continentKey,
+        name: continentData.name,
+        count,
+        countries: Array.from(countriesByContinent.get(continentKey) || []),
+        color: CONTINENT_COLORS[continentKey] || '#6b7280',
+      });
+    }
+
+    // Sort by count descending
+    continents.sort((a, b) => b.count - a.count);
+
+    return { continents, total };
+  }
+
+  /**
+   * Get countries for a specific continent
+   */
+  async getCountriesForContinent(continentId: string): Promise<CountryListResponse> {
+    const locations = await locationRepository.findAllLocationsFlat();
+    const continentData = CONTINENTS[continentId];
+
+    if (!continentData) {
+      return { countries: [], continent: continentId, total: 0 };
+    }
+
+    // Count by country
+    const countByCountry = new Map<string, number>();
+    const regionsByCountry = new Map<string, Set<string>>();
+
+    for (const loc of locations) {
+      const country = getCountryForLocation(loc.word);
+      if (country && continentData.countries.includes(country)) {
+        countByCountry.set(country, (countByCountry.get(country) || 0) + 1);
+
+        // Check if this is a region
+        const regions = COUNTRY_REGIONS[country];
+        if (regions) {
+          const normalized = normalizeLocation(loc.word);
+          for (const region of regions) {
+            if (normalized.includes(normalizeLocation(region))) {
+              if (!regionsByCountry.has(country)) {
+                regionsByCountry.set(country, new Set());
+              }
+              regionsByCountry.get(country)!.add(region);
+            }
+          }
+        }
+      }
+    }
+
+    const countries: CountryStats[] = [];
+    let total = 0;
+
+    for (const [country, count] of countByCountry.entries()) {
+      total += count;
+      countries.push({
+        id: country.replace(/\s+/g, '_').toLowerCase(),
+        name: country.charAt(0).toUpperCase() + country.slice(1),
+        continent: continentId,
+        count,
+        regions: Array.from(regionsByCountry.get(country) || []),
+      });
+    }
+
+    // Sort by count descending
+    countries.sort((a, b) => b.count - a.count);
+
+    return { countries, continent: continentData.name, total };
+  }
+
+  /**
+   * Get regions for a specific country
+   */
+  async getRegionsForCountry(countryId: string): Promise<RegionListResponse> {
+    const locations = await locationRepository.findAllLocationsFlat();
+    const countryName = countryId.replace(/_/g, ' ').toLowerCase();
+    const regions = COUNTRY_REGIONS[countryName] || [];
+
+    if (regions.length === 0) {
+      return { regions: [], country: countryId, total: 0 };
+    }
+
+    // Count by region
+    const countByRegion = new Map<string, number>();
+
+    for (const loc of locations) {
+      const normalized = normalizeLocation(loc.word);
+      for (const region of regions) {
+        if (normalized === normalizeLocation(region) ||
+          normalized.includes(normalizeLocation(region))) {
+          countByRegion.set(region, (countByRegion.get(region) || 0) + 1);
+        }
+      }
+    }
+
+    const regionStats: RegionStats[] = [];
+    let total = 0;
+
+    for (const [region, count] of countByRegion.entries()) {
+      total += count;
+      regionStats.push({
+        id: region.replace(/\s+/g, '_').toLowerCase(),
+        name: region.charAt(0).toUpperCase() + region.slice(1),
+        country: countryId,
+        count,
+      });
+    }
+
+    // Sort by count descending
+    regionStats.sort((a, b) => b.count - a.count);
+
+    return { regions: regionStats, country: countryName, total };
+  }
+
+  /**
    * Classify a location as Domestic, Regional, or International.
    */
   private classifyLocation(location: Location): GeographyCategory {
-    const normalized = this.normalizeLocation(location.name);
+    const normalized = normalizeLocation(location.word);
 
     // Check if it's Vietnam (Domestic)
     if (VIETNAM_NAMES.has(normalized)) {
@@ -190,14 +362,6 @@ export class LocationService {
 
     // Everything else is International
     return 'International';
-  }
-
-  normalizeLocation(input: string): string {
-    return input
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // strip accents
-      .trim();
   }
 }
 
