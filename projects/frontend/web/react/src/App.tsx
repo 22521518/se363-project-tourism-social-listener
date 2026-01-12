@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import Dashboard from "./routes/Dashboard";
 import PostAnalysis from "./routes/PostAnalysis";
+import Geography from "./routes/Geography";
 
 import { Header } from "./components/Header";
 import { useState } from "react";
@@ -28,6 +29,9 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="posts" element={<PostAnalysis />} />
         <Route path="posts/:id" element={<PostDetail />} />
+        <Route path="geography" element={<Geography />} />
+        <Route path="geography/:continentId" element={<Geography />} />
+        <Route path="geography/:continentId/:countryId" element={<Geography />} />
       </Route>
     </Routes>
   );

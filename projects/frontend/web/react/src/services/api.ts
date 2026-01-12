@@ -6,8 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 interface ApiResponse<T> {
   success: boolean;
-  data: T;
+  data?: T;
   error?: string;
+  [key: string]: unknown; // Allow additional fields like continents, countries, etc.
 }
 
 export async function fetchApi<T>(endpoint: string): Promise<T> {
@@ -23,6 +24,20 @@ export async function fetchApi<T>(endpoint: string): Promise<T> {
     throw new Error(json.error || 'Unknown API error');
   }
 
-  console.log(endpoint," API response data:", json.data);
-  return json.data;
+  // If response has 'data' AND 'meta' fields, return full object (paginated response)
+  // This handles { success, data: [...], meta: {...}, summary: {...} } format
+  if (json.data !== undefined && 'meta' in json) {
+    const { success, error, ...rest } = json;
+    return rest as unknown as T;
+  }
+
+  // If response has only 'data' field without pagination, return just the data
+  if (json.data !== undefined) {
+    return json.data;
+  }
+
+  // Otherwise return the json without success/error fields
+  // This handles { success, continents: [...], total: N } format
+  const { success, error, ...rest } = json;
+  return rest as unknown as T;
 }
