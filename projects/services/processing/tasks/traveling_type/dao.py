@@ -216,7 +216,8 @@ class TravelingTypeDAO:
                 unprocessed = session.query(YouTubeCommentModel).filter(
                     YouTubeCommentModel.id.notin_(processed_ids)
                 ).order_by(
-                    YouTubeCommentModel.created_at.desc()
+                    YouTubeCommentModel.created_at.desc(),
+                    YouTubeCommentModel.id.desc(),
                 ).limit(limit).offset(offset).all()
                 
                 # Convert ORM objects to DTOs while session is still open

@@ -44,7 +44,7 @@ with DAG(
     'intention_db_producer',
     default_args=default_args,
     description='Run unprocess intention producer from DB to Kafka',
-    schedule_interval=timedelta(minutes=60),
+    schedule_interval=timedelta(days=1),
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['intention', 'db','unprocessed', 'producer'],
@@ -60,7 +60,7 @@ with DAG(
     # Task 2: Produce Unprocessed Comments to Kafka
     run_producer = BashOperator(
         task_id='produce_to_kafka',
-        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 10000",
+        bash_command=f"bash {PRODUCER_SCRIPT} --run-once --batch-size 15000",
         env=COMMON_ENV,
     )
 
